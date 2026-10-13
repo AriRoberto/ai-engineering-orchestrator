@@ -14,7 +14,13 @@ settings = get_settings()
 configure_logging(settings.log_level)
 logger = structlog.get_logger()
 repository = InMemoryExecutionRepository()
-orchestrator = AIEngineeringOrchestrator(default_agents(), repository, settings.max_steps)
+orchestrator = AIEngineeringOrchestrator(
+    default_agents(),
+    repository,
+    settings.max_steps,
+    settings.agent_timeout_seconds,
+    settings.max_retries,
+)
 
 app = FastAPI(
     title=settings.app_name,

@@ -1,6 +1,9 @@
+import time
+
+from ai_engineering.agents.base import EngineeringAgent
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.repository import InMemoryExecutionRepository
-from ai_engineering.domain.models import AgentKind, ExecutionStatus, TaskRequest
+from ai_engineering.domain.models import AgentKind, AgentResult, ExecutionStatus, TaskRequest
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
 
 
@@ -43,3 +46,48 @@ def test_software_agent_detects_example_stack() -> None:
     findings = execution.results[0].findings
     assert "Detected stack: Python" in findings
     assert "Detected stack: JavaScript/TypeScript" in findings
+
+
+class FlakyAgent(EngineeringAgent):
+    kind = AgentKind.SOFTWARE_ENGINEER
+    description = "Test double"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def execute(self, request: TaskRequest) -> AgentResult:
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("transient")
+        return AgentResult(agent=self.kind, summary="Recovered")
+
+
+class SlowAgent(EngineeringAgent):
+    kind = AgentKind.SOFTWARE_ENGINEER
+    description = "Test double"
+
+    def execute(self, request: TaskRequest) -> AgentResult:
+        time.sleep(0.05)
+        return AgentResult(agent=self.kind, summary="Too late")
+
+
+def test_transient_agent_failure_is_retried_once() -> None:
+    agent = FlakyAgent()
+    orchestrator = AIEngineeringOrchestrator(
+        {AgentKind.SOFTWARE_ENGINEER: agent}, InMemoryExecutionRepository(), max_retries=1
+    )
+    execution = orchestrator.execute(TaskRequest(project_id="demo-project", prompt="Analyze code"))
+    assert execution.status == ExecutionStatus.COMPLETED
+    assert agent.calls == 2
+
+
+def test_agent_timeout_fails_execution_without_exposing_details() -> None:
+    orchestrator = AIEngineeringOrchestrator(
+        {AgentKind.SOFTWARE_ENGINEER: SlowAgent()},
+        InMemoryExecutionRepository(),
+        agent_timeout_seconds=0.001,
+        max_retries=0,
+    )
+    execution = orchestrator.execute(TaskRequest(project_id="demo-project", prompt="Analyze code"))
+    assert execution.status == ExecutionStatus.FAILED
+    assert execution.error == "AgentTimeout"

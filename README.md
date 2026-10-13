@@ -72,8 +72,8 @@ Todos implementam um contrato comum e retornam resultado estruturado. No modo de
 ## Estados e limites
 
 `PENDING → PLANNING → RUNNING → COMPLETED`, com caminhos explícitos para `WAITING_APPROVAL`,
-`FAILED` e `CANCELLED`. A fundação inclui limite de passos; timeout, retry, custo e persistência
-distribuída serão ampliados junto do adaptador LLM.
+`FAILED` e `CANCELLED`. A fundação inclui limite de passos, timeout por agente e retry limitado.
+Controles de tokens/custo e persistência distribuída serão adicionados junto do adaptador LLM.
 
 ## Segurança e governança Git
 

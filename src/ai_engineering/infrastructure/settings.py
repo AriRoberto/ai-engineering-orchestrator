@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     demo_mode: bool = True
     max_steps: int = 8
+    agent_timeout_seconds: float = 5.0
+    max_retries: int = 1
     model_config = SettingsConfigDict(env_prefix="AIEO_", env_file=".env", extra="ignore")
 
 
