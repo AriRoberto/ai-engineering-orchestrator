@@ -1,0 +1,7 @@
+protected_branches: [main, master, develop]
+agent_branch_pattern: "agents/<agent>/<type>-<description>-<id>"
+direct_write: forbidden
+force_push: forbidden
+automatic_merge: forbidden
+publish_requires_human_approval: true
+

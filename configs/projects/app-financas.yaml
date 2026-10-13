@@ -1,0 +1,9 @@
+id: app-financas
+owner: AriRoberto
+repository: https://github.com/AriRoberto/app-financas
+default_branch: main
+visibility: public
+mode: read-only
+knowledge_namespace: project/app-financas
+verified: 2026-10-13
+
