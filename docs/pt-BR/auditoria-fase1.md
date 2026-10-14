@@ -11,7 +11,9 @@ Data da auditoria: 13/10/2026.
 - GitHub Actions inicial: dois runs de CI falharam porque `pytest` não importava `apps.api.main`.
 - Correção aplicada na branch de auditoria: uso de `python -m pytest` e empacotamento explícito de
   `apps`.
-- A proteção remota de `main` e `develop` deve ser confirmada após a CI verde.
+- GitHub Actions corrigido e validado remotamente: Ruff, 14 testes e build Docker aprovados.
+- Proteção remota confirmada em `main` e `develop`: check `test`, branch atualizada, uma aprovação,
+  conversas resolvidas, histórico linear e bloqueio de force push/exclusão.
 
 ## Inventário
 
@@ -32,7 +34,7 @@ Data da auditoria: 13/10/2026.
 | Docker runtime | `Dockerfile` | Python 3.12, usuário sem root e health check | Funcional | Build e execução manual | Dependências não travadas por lockfile; install ocorre como root no build |
 | Docker Compose | `compose.yaml` | Subir API endurecida localmente | Funcional | `docker compose config`, API e health check manuais | Serviço único; sem banco/volumes; porta fixa 8000 |
 | Automação local | `Makefile` | Atalhos de instalação, execução, teste e Compose | Funcional | Comandos equivalentes executados manualmente | Requer Python 3.12 para alvos locais |
-| CI | `.github/workflows/ci.yml` | Lint, teste e build no GitHub Actions | Funcional na branch de auditoria | Runs local e remoto | O status verde remoto deve ser confirmado antes da aprovação do PR |
+| CI | `.github/workflows/ci.yml` | Lint, teste e build no GitHub Actions | Funcional | Runs local e remoto verdes | Atualizações futuras das actions devem ser avaliadas periodicamente |
 | Política declarativa | `configs/policies/git-governance.yaml` | Documentar branches e operações proibidas | Parcial | Consistência conceitual coberta pelos testes Python | YAML não é carregado pelo serviço |
 | Configuração app-financas | `configs/projects/app-financas.yaml` | Metadados isolados e somente leitura | Planejado | Nenhum | Não é carregada; nenhum diagnóstico real executado nesta auditoria |
 | Configuração app-ams | `configs/projects/app-ams.yaml` | Metadados isolados e somente leitura | Planejado | Nenhum | Requer acesso autenticado; não é carregada; piloto não foi tocado |
