@@ -64,7 +64,7 @@ class AIEngineeringOrchestrator:
     def execute(self, request: TaskRequest) -> Execution:
         execution = Execution(request=request)
         execution.transition(
-            ExecutionStatus.PLANNING, "Request accepted for deterministic planning"
+            ExecutionStatus.PLANNING, "Solicitação aceita para planejamento determinístico"
         )
         execution.selected_agents = self.route(request.prompt)
         knowledge_context = self._retrieve_knowledge(execution)
@@ -75,28 +75,33 @@ class AIEngineeringOrchestrator:
         if knowledge_context:
             execution.plan.insert(0, "Consultar conhecimento isolado e referenciado do projeto")
         if len(execution.plan) > self.max_steps:
-            execution.error = "Maximum step limit exceeded"
+            execution.error = "Limite máximo de etapas excedido"
             execution.transition(ExecutionStatus.FAILED, execution.error)
             self.repository.save(execution)
             return execution
         if not request.read_only:
             execution.transition(
-                ExecutionStatus.WAITING_APPROVAL, "Write-capable task requires human approval"
+                ExecutionStatus.WAITING_APPROVAL,
+                "Tarefa com capacidade de escrita requer aprovação humana",
             )
             self.repository.save(execution)
             return execution
-        execution.transition(ExecutionStatus.RUNNING, "Executing bounded agent plan")
+        execution.transition(ExecutionStatus.RUNNING, "Executando plano limitado de agentes")
         try:
             for kind in execution.selected_agents:
                 execution.results.append(self._execute_agent(kind, request))
             self._consolidate(execution, knowledge_context)
-            execution.transition(ExecutionStatus.COMPLETED, "All planned diagnostics completed")
+            execution.transition(
+                ExecutionStatus.COMPLETED, "Todos os diagnósticos planejados foram concluídos"
+            )
         except TimeoutError:
             execution.error = "AgentTimeout"
-            execution.transition(ExecutionStatus.FAILED, "Agent execution exceeded its timeout")
+            execution.transition(
+                ExecutionStatus.FAILED, "A execução do agente excedeu o tempo limite"
+            )
         except Exception as exc:  # defensive boundary; error detail is intentionally limited
             execution.error = type(exc).__name__
-            execution.transition(ExecutionStatus.FAILED, "Agent execution failed")
+            execution.transition(ExecutionStatus.FAILED, "Falha na execução do agente")
         self.repository.save(execution)
         return execution
 
@@ -172,6 +177,6 @@ class AIEngineeringOrchestrator:
             ExecutionStatus.COMPLETED,
             ExecutionStatus.FAILED,
         }:
-            execution.transition(ExecutionStatus.CANCELLED, "Cancellation requested")
+            execution.transition(ExecutionStatus.CANCELLED, "Cancelamento solicitado")
             self.repository.save(execution)
         return execution

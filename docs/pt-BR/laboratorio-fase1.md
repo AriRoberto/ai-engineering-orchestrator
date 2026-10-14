@@ -16,7 +16,7 @@ Em outro terminal, acompanhe os logs:
 docker compose logs -f api
 ```
 
-## Exercício 1 — Software Engineering Agent
+## Exercício 1 — Agente de Engenharia de Software
 
 ### Objetivo
 
@@ -58,7 +58,7 @@ Isso comprova roteamento e reconhecimento por assinatura, não análise real de 
 No terminal de logs, procure `event=execution_processed` (em JSON, `"event":
 "execution_processed"`), o UUID e `"execution_status":"COMPLETED"`.
 
-## Exercício 2 — DevOps Agent
+## Exercício 2 — Agente DevOps
 
 ### Objetivo
 
@@ -85,8 +85,8 @@ nomes que o agente reconhece: `Dockerfile` e um caminho iniciado por `.github/wo
 
 ### Resultado esperado e interpretação
 
-`selected_agents` deve conter `devops`. Os achados esperados são `Container definition found` e
-`GitHub Actions workflow found`. O agente apenas confirma nomes na entrada; ele não abre o
+`selected_agents` deve conter `devops`. Os achados esperados são `Definição de container encontrada`
+e `Workflow do GitHub Actions encontrado`. O agente apenas confirma nomes na entrada; ele não abre o
 Dockerfile, valida YAML, executa pipeline ou consulta GitHub.
 
 ### Logs
@@ -97,7 +97,7 @@ docker compose logs --tail=20 api
 
 Compare o `execution_id` da resposta com o ID exibido no log estruturado.
 
-## Exercício 3 — Kubernetes Agent
+## Exercício 3 — Agente Kubernetes
 
 ### Objetivo
 
@@ -124,8 +124,8 @@ regras simples de reconhecimento atuais.
 
 ### Resultado esperado e interpretação
 
-`selected_agents` deve conter `kubernetes`. O resultado deve indicar `3 Kubernetes/Helm evidence
-item(s) supplied`, repetir os três itens em `evidence` e apresentar `simulated: true`.
+`selected_agents` deve conter `kubernetes`. O resultado deve indicar `3 evidência(s) de
+Kubernetes/Helm fornecida(s)`, repetir os três itens em `evidence` e apresentar `simulated: true`.
 
 Isso não valida schema Kubernetes, recursos, namespace, segurança ou capacidade do cluster.
 

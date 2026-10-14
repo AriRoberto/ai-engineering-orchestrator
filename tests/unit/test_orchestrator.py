@@ -52,8 +52,8 @@ def test_software_agent_detects_example_stack() -> None:
         )
     )
     findings = execution.results[0].findings
-    assert "Detected stack: Python" in findings
-    assert "Detected stack: JavaScript/TypeScript" in findings
+    assert "Stack detectada: Python" in findings
+    assert "Stack detectada: JavaScript/TypeScript" in findings
 
 
 class FlakyAgent(EngineeringAgent):

@@ -10,10 +10,10 @@ flowchart LR
     C[Cliente HTTP] --> API[FastAPI]
     API --> O[AIEngineeringOrchestrator]
     O --> R{Roteamento por palavras-chave}
-    R --> SE[Software Engineering Agent]
-    R --> DO[DevOps Agent]
-    R --> K8[Kubernetes Agent]
-    R --> SR[Linux/SRE Agent]
+    R --> SE[Agente de Engenharia de Software]
+    R --> DO[Agente DevOps]
+    R --> K8[Agente Kubernetes]
+    R --> SR[Agente Linux/SRE]
     O --> MEM[(InMemoryExecutionRepository)]
     O -. tarefas de escrita .-> HA[WAITING_APPROVAL]
     GG[GitGovernanceService] --> PB[Políticas de branch]
@@ -65,7 +65,7 @@ O método `route()` normaliza o texto com `casefold()` e procura palavras-chave:
 | Linux/SRE | `linux`, `incident`, `log`, `sre`, `servidor` |
 | Software Engineering | `código`, `code`, `arquitetura`, `stack`, `software`, `teste` |
 
-Mais de um agente pode ser escolhido. Se nenhuma regra corresponder, o Software Engineering Agent é
+Mais de um agente pode ser escolhido. Se nenhuma regra corresponder, o Agente de Engenharia de Software é
 usado como fallback. Não há classificação por LLM nesta fase.
 
 ## Ciclo de execução de uma tarefa
