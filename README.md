@@ -125,6 +125,7 @@ Guias da Fase 1:
 - [Guia de arquitetura](docs/pt-BR/guia-arquitetura.md)
 - [Primeiros passos no macOS Apple Silicon](docs/pt-BR/primeiros-passos.md)
 - [Laboratório guiado](docs/pt-BR/laboratorio-fase1.md)
+- [Laboratório prático da Fase 2](docs/pt-BR/laboratorio-fase2.md)
 
 Fundação da Fase 2:
 
