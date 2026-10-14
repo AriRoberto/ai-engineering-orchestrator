@@ -41,6 +41,15 @@ class AgentResult(BaseModel):
     simulated: bool = False
 
 
+class LLMUsageRecord(BaseModel):
+    provider: str
+    model: str
+    input_tokens: int
+    output_tokens: int
+    estimated: bool = True
+    estimated_cost_usd: float | None = None
+
+
 class ExecutionEvent(BaseModel):
     status: ExecutionStatus
     at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -54,6 +63,9 @@ class Execution(BaseModel):
     selected_agents: list[AgentKind] = Field(default_factory=list)
     plan: list[str] = Field(default_factory=list)
     results: list[AgentResult] = Field(default_factory=list)
+    knowledge_sources: list[str] = Field(default_factory=list)
+    consolidated_result: str | None = None
+    llm_usage: LLMUsageRecord | None = None
     events: list[ExecutionEvent] = Field(default_factory=list)
     error: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

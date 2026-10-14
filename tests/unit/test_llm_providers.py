@@ -9,6 +9,9 @@ def test_simulated_provider_is_explicitly_marked() -> None:
     assert result.simulated is True
     assert result.provider == "simulated"
     assert "SIMULAÇÃO" in result.text
+    assert result.usage.input_tokens > 0
+    assert result.usage.output_tokens > 0
+    assert result.usage.estimated is True
 
 
 def test_unknown_provider_fails_closed() -> None:

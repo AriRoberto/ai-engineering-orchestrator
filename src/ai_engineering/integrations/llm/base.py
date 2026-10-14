@@ -10,11 +10,20 @@ class LLMRequest:
 
 
 @dataclass(frozen=True)
+class LLMUsage:
+    input_tokens: int
+    output_tokens: int
+    estimated: bool = True
+    estimated_cost_usd: float | None = None
+
+
+@dataclass(frozen=True)
 class LLMResponse:
     text: str
     provider: str
     model: str
     simulated: bool
+    usage: LLMUsage
 
 
 class LLMProvider(Protocol):

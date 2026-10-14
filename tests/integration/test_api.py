@@ -25,6 +25,8 @@ def test_demo_execution() -> None:
     payload = response.json()
     assert payload["status"] == "COMPLETED"
     assert all(result["simulated"] for result in payload["results"])
+    assert payload["consolidated_result"].startswith("[SIMULAÇÃO]")
+    assert payload["llm_usage"]["provider"] == "simulated"
 
 
 def test_knowledge_and_simulated_llm_endpoints() -> None:
@@ -47,3 +49,4 @@ def test_knowledge_and_simulated_llm_endpoints() -> None:
     llm = client.post("/v1/llm/generate", json={"prompt": "Explique o diagnóstico"})
     assert llm.status_code == 200
     assert llm.json()["simulated"] is True
+    assert llm.json()["usage"]["estimated"] is True

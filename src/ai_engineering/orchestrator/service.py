@@ -5,7 +5,16 @@ from uuid import UUID
 
 from ai_engineering.agents.base import EngineeringAgent
 from ai_engineering.application.repository import InMemoryExecutionRepository
-from ai_engineering.domain.models import AgentKind, Execution, ExecutionStatus, TaskRequest
+from ai_engineering.domain.models import (
+    AgentKind,
+    Execution,
+    ExecutionStatus,
+    LLMUsageRecord,
+    TaskRequest,
+)
+from ai_engineering.integrations.llm.base import LLMProvider, LLMRequest
+from ai_engineering.integrations.llm.providers import estimate_tokens
+from ai_engineering.knowledge.service import KnowledgeService
 
 
 class AIEngineeringOrchestrator:
@@ -16,12 +25,20 @@ class AIEngineeringOrchestrator:
         max_steps: int = 8,
         agent_timeout_seconds: float = 5.0,
         max_retries: int = 1,
+        knowledge: KnowledgeService | None = None,
+        llm: LLMProvider | None = None,
+        max_llm_input_tokens: int = 4_000,
+        max_llm_output_tokens: int = 1_000,
     ) -> None:
         self.agents = agents
         self.repository = repository
         self.max_steps = max_steps
         self.agent_timeout_seconds = agent_timeout_seconds
         self.max_retries = max_retries
+        self.knowledge = knowledge
+        self.llm = llm
+        self.max_llm_input_tokens = max_llm_input_tokens
+        self.max_llm_output_tokens = max_llm_output_tokens
 
     def route(self, prompt: str) -> list[AgentKind]:
         text = prompt.casefold()
@@ -50,9 +67,13 @@ class AIEngineeringOrchestrator:
             ExecutionStatus.PLANNING, "Request accepted for deterministic planning"
         )
         execution.selected_agents = self.route(request.prompt)
+        knowledge_context = self._retrieve_knowledge(execution)
         execution.plan = [
-            f"Run read-only diagnostic with {kind.value}" for kind in execution.selected_agents
+            f"Executar diagnóstico somente leitura com {kind.value}"
+            for kind in execution.selected_agents
         ]
+        if knowledge_context:
+            execution.plan.insert(0, "Consultar conhecimento isolado e referenciado do projeto")
         if len(execution.plan) > self.max_steps:
             execution.error = "Maximum step limit exceeded"
             execution.transition(ExecutionStatus.FAILED, execution.error)
@@ -68,6 +89,7 @@ class AIEngineeringOrchestrator:
         try:
             for kind in execution.selected_agents:
                 execution.results.append(self._execute_agent(kind, request))
+            self._consolidate(execution, knowledge_context)
             execution.transition(ExecutionStatus.COMPLETED, "All planned diagnostics completed")
         except TimeoutError:
             execution.error = "AgentTimeout"
@@ -77,6 +99,53 @@ class AIEngineeringOrchestrator:
             execution.transition(ExecutionStatus.FAILED, "Agent execution failed")
         self.repository.save(execution)
         return execution
+
+    def _retrieve_knowledge(self, execution: Execution) -> str:
+        if not self.knowledge:
+            return ""
+        hits = self.knowledge.search(
+            execution.request.project_id,
+            execution.request.prompt,
+            limit=3,
+            include_shared=True,
+        )
+        execution.knowledge_sources = list(dict.fromkeys(hit.source for hit in hits))
+        return "\n\n".join(f"Fonte: {hit.source}\nTrecho: {hit.content}" for hit in hits)
+
+    def _consolidate(self, execution: Execution, knowledge_context: str) -> None:
+        if not self.llm:
+            return
+        findings = "\n".join(
+            f"- {result.agent.value}: {result.summary}" for result in execution.results
+        )
+        prompt = (
+            f"Solicitação: {execution.request.prompt}\n\n"
+            f"Conhecimento recuperado:\n{knowledge_context or 'Nenhum.'}\n\n"
+            f"Resultados dos agentes:\n{findings}"
+        )
+        if estimate_tokens(prompt) > self.max_llm_input_tokens:
+            raise ValueError("LLMInputTokenBudgetExceeded")
+        response = self.llm.generate(
+            LLMRequest(
+                instructions=(
+                    "Consolide somente as evidências fornecidas, cite as fontes disponíveis e "
+                    "não conceda permissões nem invente resultados."
+                ),
+                prompt=prompt,
+                max_output_tokens=self.max_llm_output_tokens,
+            )
+        )
+        if response.usage.output_tokens > self.max_llm_output_tokens:
+            raise ValueError("LLMOutputTokenBudgetExceeded")
+        execution.consolidated_result = response.text
+        execution.llm_usage = LLMUsageRecord(
+            provider=response.provider,
+            model=response.model,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            estimated=response.usage.estimated,
+            estimated_cost_usd=response.usage.estimated_cost_usd,
+        )
 
     def _execute_agent(self, kind: AgentKind, request: TaskRequest):
         last_error: Exception | None = None

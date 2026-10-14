@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     database_url: str | None = None
     llm_provider: str = "simulated"
     llm_model: str = "gpt-6-astra"
+    llm_planning_enabled: bool = True
+    max_llm_input_tokens: int = 4_000
+    max_llm_output_tokens: int = 1_000
     embedding_dimensions: int = 16
     knowledge_chunk_size: int = 800
     knowledge_chunk_overlap: int = 100
