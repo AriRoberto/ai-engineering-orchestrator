@@ -4,13 +4,13 @@ install:
 	python -m pip install -e '.[dev]'
 
 run:
-	uvicorn apps.api.main:app --reload
+	python -m uvicorn apps.api.main:app --reload
 
 test:
-	pytest
+	python -m pytest
 
 lint:
-	ruff check .
+	python -m ruff check .
 
 compose-up:
 	docker compose up --build

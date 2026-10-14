@@ -6,7 +6,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > Fundação segura e extensível para coordenar agentes especializados em engenharia de software.
-> Secure, extensible foundation for coordinating specialist software-engineering agents.
 
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
@@ -180,14 +179,9 @@ Nenhum piloto é modificado na Fase 1.
 
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
 2. **Inteligência e RAG:** LLMs, PostgreSQL/pgvector, ingestão, memória e feedback.
-3. **Especialização:** Database, QA, Security e Documentation Agents.
+3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação.
 4. **Pilotos:** diagnósticos autenticados e somente leitura; mudanças apenas após aprovação específica.
 5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
-
-## English quick start
-
-Run `docker compose up --build`, open `/docs`, and submit a demo execution as shown above. The current
-release is a deterministic, read-only foundation. See [Phase 1 details](docs/en/PHASE-1.md).
 
 ## Contribuição, licença e contato
 

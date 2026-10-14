@@ -1,33 +1,36 @@
-# ADR-001: Deterministic core with OpenAI Agents SDK adapter
+# ADR-001: Núcleo determinístico com adaptador do OpenAI Agents SDK
 
-- Status: Accepted for Phase 1
-- Date: 2026-10-13
+- Status: aceito para a Fase 1
+- Data: 13/10/2026
 
-## Context
+## Contexto
 
-The platform requires predictable policy enforcement, a no-credential demo mode, human approvals,
-bounded execution and future LLM-driven delegation. LangGraph provides graph-oriented durable
-workflows. The OpenAI Agents SDK provides a smaller Python-first abstraction set, manager-style
-orchestration, handoffs, guardrails, tracing and usage data.
+A plataforma exige aplicação previsível de políticas, modo demonstração sem credenciais, aprovações
+humanas, execução limitada e futura delegação dirigida por LLM. O LangGraph oferece fluxos duráveis
+orientados a grafos. O OpenAI Agents SDK oferece um conjunto menor de abstrações centradas em
+Python, orquestração no padrão gerente, transferências, proteções, rastreamento e dados de uso.
 
-## Decision
+## Decisão
 
-Phase 1 uses a provider-neutral deterministic orchestrator written against internal agent contracts.
-Phase 2 will add an OpenAI Agents SDK adapter behind those contracts. The deterministic policy and
-Git-governance layers remain authoritative; an LLM never grants itself permission.
+A Fase 1 usa um orquestrador determinístico e neutro em relação a provedores, escrito sobre
+contratos internos de agentes. A Fase 2 adicionará um adaptador do OpenAI Agents SDK por trás desses
+contratos. As camadas determinísticas de políticas e governança Git continuam sendo a autoridade;
+um LLM nunca concede permissão a si mesmo.
 
-This choice keeps the demo free of paid dependencies, reduces lock-in at the domain boundary, and
-aligns future manager-style agent orchestration with the platform's central orchestrator model.
+Essa escolha mantém a demonstração livre de dependências pagas, reduz o acoplamento na fronteira do
+domínio e alinha a futura orquestração no padrão gerente ao modelo de orquestrador central.
 
-## Consequences
+## Consequências
 
-- Phase 1 has no LLM dependency and does not claim autonomous reasoning.
-- LangGraph remains a documented alternative if durable graph checkpoints become a stronger need.
-- SDK integration, model configuration, cost accounting and tracing are Phase 2 work.
+- A Fase 1 não depende de LLM nem alega raciocínio autônomo.
+- O LangGraph permanece como alternativa documentada caso checkpoints duráveis em grafo se tornem
+  uma necessidade prioritária.
+- Integração do SDK, configuração de modelos, contabilização de custos e rastreamento pertencem à
+  Fase 2.
 
-## References
+## Referências
 
 - OpenAI Agents SDK: https://openai.github.io/openai-agents-python/
-- Agent orchestration: https://openai.github.io/openai-agents-python/multi_agent/
-- LangGraph overview: https://docs.langchain.com/oss/python/langgraph/overview
+- Orquestração de agentes: https://openai.github.io/openai-agents-python/multi_agent/
+- Visão geral do LangGraph: https://docs.langchain.com/oss/python/langgraph/overview
 

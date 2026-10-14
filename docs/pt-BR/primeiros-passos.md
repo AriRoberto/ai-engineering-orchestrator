@@ -124,8 +124,7 @@ python -m ruff check .
 python -m pytest
 ```
 
-O uso de `python -m pytest` é recomendado. A auditoria identificou que a CI publicada chama
-`pytest` diretamente e falha ao importar `apps`; a correção do workflow é uma pendência conhecida.
+O uso de `python -m pytest` é o padrão do projeto e também é usado pela CI.
 
 Para testar no container de runtime sem depender do Python do Mac:
 
@@ -149,7 +148,7 @@ Esse comando remove os containers e a rede do Compose. Não há volume persisten
 
 ## 10. Solução de problemas
 
-### `Cannot connect to the Docker daemon`
+### Não foi possível conectar ao mecanismo do Docker
 
 Abra o Docker Desktop, aguarde o mecanismo iniciar e execute `docker info`.
 
@@ -173,7 +172,7 @@ adicionado localmente e reconstrua:
 docker compose build --no-cache
 ```
 
-### `ModuleNotFoundError: apps`
+### Erro `ModuleNotFoundError: apps`
 
 Execute os comandos a partir da raiz do repositório e prefira:
 
