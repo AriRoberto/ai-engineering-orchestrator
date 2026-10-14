@@ -9,8 +9,9 @@
 
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
-Fase 1 entrega um backend funcional e um modo demo gratuito; recursos futuros aparecem claramente
-no roadmap e não são apresentados como prontos.
+Fase 1 entrega um backend funcional e um modo demo gratuito. A primeira entrega incremental da
+Fase 2 adiciona persistência de conhecimento e um contrato de LLM; recursos ainda futuros aparecem
+claramente no roadmap e não são apresentados como prontos.
 
 ## Proposta de valor
 
@@ -28,8 +29,9 @@ no roadmap e não são apresentados como prontos.
 | Orquestrador determinístico e quatro agentes | Implementado |
 | Modo demo e ferramentas simuladas | Implementado |
 | Governança Git e aprovação para escrita | Implementado |
-| PostgreSQL, pgvector e Agentic RAG | Planejado — Fase 2 |
-| LLM/OpenAI Agents SDK e MCP | Planejado — Fase 2 |
+| PostgreSQL, pgvector, ingestão e busca híbrida | Parcial — fundação da Fase 2 implementada |
+| Contrato LLM e adaptador OpenAI Agents SDK | Parcial — provedor simulado é o padrão |
+| Agentic RAG integrado ao orquestrador e MCP | Planejado — próximos incrementos da Fase 2 |
 | Database, QA, Security e Documentation Agents | Planejado — Fase 3 |
 | Diagnósticos reais dos pilotos | Planejado — Fase 4 |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
@@ -49,9 +51,11 @@ flowchart LR
     O --> ER[(Execution Repository)]
     G --> H{Aprovação humana}
     H -. fase futura .-> GH[GitHub / Draft PR]
-    O -. fase 2 .-> KB[(PostgreSQL + pgvector)]
-    O -. fase 2 .-> LLM[LLM adapters]
-    O -. fase 2 .-> MCP[MCP integrations]
+    API --> KB[(PostgreSQL + pgvector)]
+    API --> LLM[Adaptadores de LLM]
+    O -. próximo incremento .-> KB
+    O -. próximo incremento .-> LLM
+    O -. fase 2 futura .-> MCP[MCP integrations]
 ```
 
 O domínio define contratos e estados; a aplicação coordena casos de uso; adaptadores de
@@ -121,6 +125,10 @@ Guias da Fase 1:
 - [Primeiros passos no macOS Apple Silicon](docs/pt-BR/primeiros-passos.md)
 - [Laboratório guiado](docs/pt-BR/laboratorio-fase1.md)
 
+Fundação da Fase 2:
+
+- [Inteligência e conhecimento](docs/pt-BR/fase-2-fundacao.md)
+
 ## Exemplo de uso
 
 ```bash
@@ -142,6 +150,11 @@ Endpoints atuais:
 - `GET /v1/executions`
 - `GET /v1/executions/{id}`
 - `POST /v1/executions/{id}/cancel`
+- `POST /v1/knowledge/documents`
+- `POST /v1/knowledge/search`
+- `DELETE /v1/knowledge/documents/{id}`
+- `POST /v1/feedback`
+- `POST /v1/llm/generate`
 
 ## Adicionar projetos e agentes
 
@@ -151,11 +164,12 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 
 ## LLM, MCP e Agentic RAG
 
-Esses recursos estão deliberadamente separados da Fase 1. A Fase 2 adicionará adaptadores de LLM
-configuráveis por ambiente, limites de tokens/custo/tempo, ingestão com proteção contra prompt
-injection, recuperação híbrida com fontes e PostgreSQL/pgvector. O aprendizado ocorrerá por memória
-persistente e feedback validado — não por alegação de retreinamento automático. MCP será integrado
-por adaptadores com allowlists, schemas validados e escopos por projeto.
+A fundação da Fase 2 já inclui um contrato configurável de LLM, provedor simulado, adaptador opcional
+para OpenAI Agents SDK, ingestão protegida, recuperação híbrida com fontes, PostgreSQL/pgvector e
+feedback persistente. O próximo incremento conectará recuperação e LLM ao fluxo do orquestrador e
+adicionará limites persistentes de tokens e custos. MCP continua planejado e será integrado por
+adaptadores com allowlists, schemas validados e escopos por projeto. O aprendizado ocorre por memória
+persistente e feedback validado — não por alegação de retreinamento automático.
 
 ## Testes e qualidade
 
