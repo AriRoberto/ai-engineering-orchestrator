@@ -1,9 +1,11 @@
-# Security Policy
+# Política de segurança
 
-Do not report vulnerabilities in public issues. Use GitHub private vulnerability reporting when
-enabled. Never commit credentials; local secrets belong in `.env`, which is ignored.
+Não reporte vulnerabilidades em issues públicas. Use o relatório privado de vulnerabilidades do
+GitHub quando estiver habilitado. Nunca faça commit de credenciais; segredos locais devem ficar no
+arquivo `.env`, que é ignorado pelo Git.
 
-The service is read-only by default. Write requests stop at `WAITING_APPROVAL`. Protected branches,
-force pushes and automated merges are blocked by `GitGovernanceService`. This foundation does not
-execute arbitrary host commands or accept repository credentials.
+O serviço opera somente para leitura por padrão. Solicitações de escrita param em
+`WAITING_APPROVAL`. Branches protegidas, force push e merge automático são bloqueados pelo
+`GitGovernanceService`. Esta fundação não executa comandos arbitrários no host nem aceita
+credenciais de repositórios.
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ai-engineering-orchestrator"
 version = "0.1.0"
-description = "Secure, deterministic multi-agent engineering orchestration foundation"
+description = "Fundação segura e determinística para orquestração multiagente de engenharia"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -28,7 +28,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai_engineering"]
+packages = ["src/ai_engineering", "apps"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --cov=ai_engineering --cov-report=term-missing"
