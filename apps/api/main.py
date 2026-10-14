@@ -2,13 +2,30 @@ from uuid import UUID
 
 import structlog
 from fastapi import FastAPI, HTTPException, status
+from pydantic import BaseModel, Field
 
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import Execution, TaskRequest
 from ai_engineering.infrastructure.logging import configure_logging
 from ai_engineering.infrastructure.settings import get_settings
+from ai_engineering.integrations.llm.base import LLMRequest
+from ai_engineering.integrations.llm.providers import build_llm_provider
+from ai_engineering.knowledge.database import PostgresKnowledgeRepository
+from ai_engineering.knowledge.models import (
+    FeedbackCreate,
+    KnowledgeDocument,
+    KnowledgeDocumentCreate,
+    KnowledgeSearchRequest,
+    SearchHit,
+)
+from ai_engineering.knowledge.service import (
+    DeterministicEmbeddingProvider,
+    InMemoryKnowledgeRepository,
+    KnowledgeService,
+)
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
+from ai_engineering.security.content import KnowledgeContentGuard
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -21,6 +38,26 @@ orchestrator = AIEngineeringOrchestrator(
     settings.agent_timeout_seconds,
     settings.max_retries,
 )
+knowledge_repository = (
+    PostgresKnowledgeRepository(settings.database_url)
+    if settings.database_url
+    else InMemoryKnowledgeRepository()
+)
+knowledge_service = KnowledgeService(
+    knowledge_repository,
+    DeterministicEmbeddingProvider(settings.embedding_dimensions),
+    KnowledgeContentGuard(),
+    settings.knowledge_chunk_size,
+    settings.knowledge_chunk_overlap,
+)
+llm_provider = build_llm_provider(settings.llm_provider, settings.llm_model)
+
+
+class LLMGenerateRequest(BaseModel):
+    prompt: str = Field(min_length=2, max_length=10_000)
+    instructions: str = Field(default="Responda como assistente de engenharia.", max_length=5_000)
+    max_output_tokens: int = Field(default=1_000, ge=1, le=8_000)
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -77,3 +114,54 @@ def cancel_execution(execution_id: UUID) -> Execution:
     if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
     return execution
+
+
+@app.post(
+    "/v1/knowledge/documents",
+    response_model=KnowledgeDocument,
+    status_code=status.HTTP_201_CREATED,
+    tags=["knowledge"],
+)
+def ingest_document(request: KnowledgeDocumentCreate) -> KnowledgeDocument:
+    try:
+        return knowledge_service.ingest(request)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v1/knowledge/search", response_model=list[SearchHit], tags=["knowledge"])
+def search_knowledge(request: KnowledgeSearchRequest) -> list[SearchHit]:
+    return knowledge_service.search(
+        request.project_id, request.query, request.limit, request.include_shared
+    )
+
+
+@app.delete("/v1/knowledge/documents/{document_id}", status_code=204, tags=["knowledge"])
+def delete_document(document_id: UUID, project_id: str) -> None:
+    if not knowledge_repository.delete(document_id, project_id):
+        raise HTTPException(status_code=404, detail="Documento não encontrado no projeto")
+
+
+@app.post("/v1/feedback", status_code=202, tags=["knowledge"])
+def create_feedback(request: FeedbackCreate) -> dict[str, str]:
+    knowledge_repository.add_feedback(request)
+    return {"status": "accepted"}
+
+
+@app.post("/v1/llm/generate", tags=["llm"])
+def generate_with_llm(request: LLMGenerateRequest) -> dict[str, str | bool]:
+    response = llm_provider.generate(
+        LLMRequest(
+            instructions=request.instructions,
+            prompt=request.prompt,
+            max_output_tokens=request.max_output_tokens,
+        )
+    )
+    return {
+        "text": response.text,
+        "provider": response.provider,
+        "model": response.model,
+        "simulated": response.simulated,
+    }
