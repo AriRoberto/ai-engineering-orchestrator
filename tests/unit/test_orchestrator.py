@@ -4,7 +4,15 @@ from ai_engineering.agents.base import EngineeringAgent
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import AgentKind, AgentResult, ExecutionStatus, TaskRequest
+from ai_engineering.integrations.llm.providers import SimulatedLLMProvider
+from ai_engineering.knowledge.models import KnowledgeDocumentCreate
+from ai_engineering.knowledge.service import (
+    DeterministicEmbeddingProvider,
+    InMemoryKnowledgeRepository,
+    KnowledgeService,
+)
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
+from ai_engineering.security.content import KnowledgeContentGuard
 
 
 def make_orchestrator() -> AIEngineeringOrchestrator:
@@ -91,3 +99,49 @@ def test_agent_timeout_fails_execution_without_exposing_details() -> None:
     execution = orchestrator.execute(TaskRequest(project_id="demo-project", prompt="Analyze code"))
     assert execution.status == ExecutionStatus.FAILED
     assert execution.error == "AgentTimeout"
+
+
+def test_rag_context_is_referenced_and_llm_consolidates_results() -> None:
+    knowledge = KnowledgeService(
+        InMemoryKnowledgeRepository(),
+        DeterministicEmbeddingProvider(),
+        KnowledgeContentGuard(),
+    )
+    knowledge.ingest(
+        KnowledgeDocumentCreate(
+            project_id="demo-project",
+            title="Runbook",
+            content="O pipeline fictício usa Docker e valida o health check.",
+            source="demo://runbook",
+        )
+    )
+    orchestrator = AIEngineeringOrchestrator(
+        default_agents(),
+        InMemoryExecutionRepository(),
+        knowledge=knowledge,
+        llm=SimulatedLLMProvider(),
+    )
+
+    execution = orchestrator.execute(
+        TaskRequest(project_id="demo-project", prompt="Analise o pipeline Docker")
+    )
+
+    assert execution.status == ExecutionStatus.COMPLETED
+    assert execution.knowledge_sources == ["demo://runbook"]
+    assert execution.consolidated_result is not None
+    assert execution.llm_usage is not None
+    assert execution.llm_usage.estimated is True
+
+
+def test_llm_input_budget_fails_closed() -> None:
+    orchestrator = AIEngineeringOrchestrator(
+        default_agents(),
+        InMemoryExecutionRepository(),
+        llm=SimulatedLLMProvider(),
+        max_llm_input_tokens=1,
+    )
+    execution = orchestrator.execute(
+        TaskRequest(project_id="demo-project", prompt="Analise o código da aplicação")
+    )
+    assert execution.status == ExecutionStatus.FAILED
+    assert execution.error == "ValueError"

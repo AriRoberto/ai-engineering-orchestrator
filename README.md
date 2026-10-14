@@ -31,7 +31,8 @@ claramente no roadmap e não são apresentados como prontos.
 | Governança Git e aprovação para escrita | Implementado |
 | PostgreSQL, pgvector, ingestão e busca híbrida | Parcial — fundação da Fase 2 implementada |
 | Contrato LLM e adaptador OpenAI Agents SDK | Parcial — provedor simulado é o padrão |
-| Agentic RAG integrado ao orquestrador e MCP | Planejado — próximos incrementos da Fase 2 |
+| RAG integrado ao fluxo do orquestrador | Implementado com embeddings de demonstração |
+| MCP e memória persistente de execuções | Planejado — próximos incrementos da Fase 2 |
 | Database, QA, Security e Documentation Agents | Planejado — Fase 3 |
 | Diagnósticos reais dos pilotos | Planejado — Fase 4 |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
@@ -166,8 +167,9 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 
 A fundação da Fase 2 já inclui um contrato configurável de LLM, provedor simulado, adaptador opcional
 para OpenAI Agents SDK, ingestão protegida, recuperação híbrida com fontes, PostgreSQL/pgvector e
-feedback persistente. O próximo incremento conectará recuperação e LLM ao fluxo do orquestrador e
-adicionará limites persistentes de tokens e custos. MCP continua planejado e será integrado por
+feedback persistente. Recuperação e LLM já participam do fluxo do orquestrador com limites de tokens
+e uso estimado explicitamente identificado. Medição oficial de custos e persistência das execuções
+continuam pendentes. MCP será integrado por
 adaptadores com allowlists, schemas validados e escopos por projeto. O aprendizado ocorre por memória
 persistente e feedback validado — não por alegação de retreinamento automático.
 
@@ -192,7 +194,8 @@ Nenhum piloto é modificado na Fase 1.
 ## Roadmap
 
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
-2. **Inteligência e RAG:** LLMs, PostgreSQL/pgvector, ingestão, memória e feedback.
+2. **Inteligência e RAG:** fundação e integração ao fluxo implementadas; memória persistente, custos
+   oficiais, embeddings de produção e MCP permanecem em evolução.
 3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação.
 4. **Pilotos:** diagnósticos autenticados e somente leitura; mudanças apenas após aprovação específica.
 5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.

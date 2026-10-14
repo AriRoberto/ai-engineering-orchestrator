@@ -16,12 +16,33 @@ simulações como resultados reais.
 - exclusão de documentos e registro de feedback humano;
 - endpoints Swagger para conhecimento, feedback e LLM.
 
+## Segundo incremento: RAG no fluxo do orquestrador
+
+O orquestrador agora consulta até três fragmentos autorizados antes da execução, registra as fontes
+na própria execução e entrega o contexto recuperado junto com os resultados dos agentes ao provedor
+de LLM. A saída consolidada é consultiva: o roteamento, os limites e as permissões continuam sob
+controle determinístico.
+
+Cada execução registra uma estimativa explícita de tokens de entrada e saída. A estimativa não é
+apresentada como medição oficial do provedor e o custo permanece `null` até que haja uma tabela de
+preços configurada e validada. O limite de entrada é verificado antes da chamada e o limite de saída
+é enviado ao provedor e verificado novamente na resposta.
+
+Configurações:
+
+- `AIEO_LLM_PLANNING_ENABLED`: habilita a consolidação;
+- `AIEO_MAX_LLM_INPUT_TOKENS`: teto estimado de entrada por execução;
+- `AIEO_MAX_LLM_OUTPUT_TOKENS`: teto de saída por execução.
+
 ## Limites intencionais
 
 O embedding determinístico de 16 dimensões existe para testes e demonstração local. Ele não é
 apresentado como modelo semântico de produção. O provedor OpenAI somente é ativado com
 `AIEO_LLM_PROVIDER=openai-agents` e credencial fornecida fora do repositório. O padrão permanece
 `simulated` e não realiza chamadas pagas.
+
+A memória de execuções ainda usa o repositório em memória da Fase 1. Persistência completa das
+execuções, medição oficial de uso/custo e embeddings de produção permanecem pendentes.
 
 ## Endpoints
 

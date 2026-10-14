@@ -1,15 +1,25 @@
-from ai_engineering.integrations.llm.base import LLMRequest, LLMResponse
+from ai_engineering.integrations.llm.base import LLMRequest, LLMResponse, LLMUsage
+
+
+def estimate_tokens(text: str) -> int:
+    """Estimativa conservadora e explícita; não substitui o tokenizer do provedor."""
+    return max(1, (len(text) + 3) // 4)
 
 
 class SimulatedLLMProvider:
     """Provider determinístico para testes e demonstrações sem custo."""
 
     def generate(self, request: LLMRequest) -> LLMResponse:
+        text = f"[SIMULAÇÃO] Solicitação recebida: {request.prompt[:200]}"
         return LLMResponse(
-            text=f"[SIMULAÇÃO] Solicitação recebida: {request.prompt[:200]}",
+            text=text,
             provider="simulated",
             model="deterministic-demo",
             simulated=True,
+            usage=LLMUsage(
+                input_tokens=estimate_tokens(request.instructions + request.prompt),
+                output_tokens=estimate_tokens(text),
+            ),
         )
 
 
@@ -34,6 +44,10 @@ class OpenAIAgentsProvider:
             provider="openai-agents",
             model=self.model,
             simulated=False,
+            usage=LLMUsage(
+                input_tokens=estimate_tokens(request.instructions + request.prompt),
+                output_tokens=estimate_tokens(str(result.final_output)),
+            ),
         )
 
 

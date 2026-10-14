@@ -31,13 +31,6 @@ settings = get_settings()
 configure_logging(settings.log_level)
 logger = structlog.get_logger()
 repository = InMemoryExecutionRepository()
-orchestrator = AIEngineeringOrchestrator(
-    default_agents(),
-    repository,
-    settings.max_steps,
-    settings.agent_timeout_seconds,
-    settings.max_retries,
-)
 knowledge_repository = (
     PostgresKnowledgeRepository(settings.database_url)
     if settings.database_url
@@ -51,6 +44,17 @@ knowledge_service = KnowledgeService(
     settings.knowledge_chunk_overlap,
 )
 llm_provider = build_llm_provider(settings.llm_provider, settings.llm_model)
+orchestrator = AIEngineeringOrchestrator(
+    default_agents(),
+    repository,
+    settings.max_steps,
+    settings.agent_timeout_seconds,
+    settings.max_retries,
+    knowledge=knowledge_service,
+    llm=llm_provider if settings.llm_planning_enabled else None,
+    max_llm_input_tokens=settings.max_llm_input_tokens,
+    max_llm_output_tokens=settings.max_llm_output_tokens,
+)
 
 
 class LLMGenerateRequest(BaseModel):
@@ -151,7 +155,7 @@ def create_feedback(request: FeedbackCreate) -> dict[str, str]:
 
 
 @app.post("/v1/llm/generate", tags=["llm"])
-def generate_with_llm(request: LLMGenerateRequest) -> dict[str, str | bool]:
+def generate_with_llm(request: LLMGenerateRequest) -> dict[str, object]:
     response = llm_provider.generate(
         LLMRequest(
             instructions=request.instructions,
@@ -164,4 +168,10 @@ def generate_with_llm(request: LLMGenerateRequest) -> dict[str, str | bool]:
         "provider": response.provider,
         "model": response.model,
         "simulated": response.simulated,
+        "usage": {
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens,
+            "estimated": response.usage.estimated,
+            "estimated_cost_usd": response.usage.estimated_cost_usd,
+        },
     }
