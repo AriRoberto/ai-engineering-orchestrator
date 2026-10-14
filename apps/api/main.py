@@ -66,7 +66,7 @@ class LLMGenerateRequest(BaseModel):
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="Secure deterministic foundation for multi-agent engineering workflows.",
+    description="Fundação determinística e segura para fluxos multiagentes de engenharia.",
 )
 
 
@@ -108,7 +108,7 @@ def list_executions() -> list[Execution]:
 def get_execution(execution_id: UUID) -> Execution:
     execution = repository.get(execution_id)
     if not execution:
-        raise HTTPException(status_code=404, detail="Execution not found")
+        raise HTTPException(status_code=404, detail="Execução não encontrada")
     return execution
 
 
@@ -116,7 +116,7 @@ def get_execution(execution_id: UUID) -> Execution:
 def cancel_execution(execution_id: UUID) -> Execution:
     execution = orchestrator.cancel(execution_id)
     if not execution:
-        raise HTTPException(status_code=404, detail="Execution not found")
+        raise HTTPException(status_code=404, detail="Execução não encontrada")
     return execution
 
 

@@ -49,7 +49,7 @@ flowchart LR
     P --> K8[Kubernetes]
     P --> SR[Linux/SRE]
     O --> G[Git Governance Service]
-    O --> ER[(Execution Repository)]
+    O --> ER[(Repositório de execuções)]
     G --> H{Aprovação humana}
     H -. fase futura .-> GH[GitHub / Draft PR]
     API --> KB[(PostgreSQL + pgvector)]
@@ -191,7 +191,7 @@ A CI repete lint, testes e build do container em pushes e pull requests para `ma
 
 Nenhum piloto é modificado na Fase 1.
 
-## Roadmap
+## Roteiro de evolução
 
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
 2. **Inteligência e RAG:** fundação e integração ao fluxo implementadas; memória persistente, custos
