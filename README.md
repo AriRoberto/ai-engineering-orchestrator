@@ -115,6 +115,13 @@ uvicorn apps.api.main:app --reload
 
 A documentação OpenAPI fica em `http://localhost:8000/docs`.
 
+Guias da Fase 1:
+
+- [Auditoria e inventário](docs/pt-BR/auditoria-fase1.md)
+- [Guia de arquitetura](docs/pt-BR/guia-arquitetura.md)
+- [Primeiros passos no macOS Apple Silicon](docs/pt-BR/primeiros-passos.md)
+- [Laboratório guiado](docs/pt-BR/laboratorio-fase1.md)
+
 ## Exemplo de uso
 
 ```bash
