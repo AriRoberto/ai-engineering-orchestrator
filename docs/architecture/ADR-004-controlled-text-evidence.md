@@ -23,8 +23,8 @@ defesa conservadora contra prompt injection e por redaction de padrões comuns d
 arquivo registra `content_status`. Conteúdo em quarentena não é persistido; somente seu hash e seus
 metadados permanecem para auditoria.
 
-Neste incremento, texto aprovado continua sendo dado não confiável e não é enviado automaticamente
-a um LLM. Segurança e Documentação consomem apenas contagens e estados do controle.
+Neste incremento, texto aprovado continua sendo dado não confiável. Seu uso posterior no contexto
+de análise é governado pelo ADR-005. Segurança e Documentação também consomem contagens e estados.
 
 ## Consequências
 
@@ -38,3 +38,4 @@ a um LLM. Segurança e Documentação consomem apenas contagens e estados do con
 
 - [ADR-003 — coleta governada de evidências públicas](ADR-003-governed-public-evidence.md)
 - [Repository contents API](https://docs.github.com/pt/rest/repos/contents?apiVersion=2022-11-28)
+- [ADR-005 — contexto citado de evidências externas](ADR-005-cited-evidence-context.md)

@@ -161,6 +161,10 @@ def test_public_github_evidence_execution(monkeypatch) -> None:
     assert payload["request"]["context"]["evidence"]["provider"] == "github"
     assert payload["request"]["context"]["evidence"]["read_only"] is True
     assert payload["request"]["context"]["evidence"]["files"][0]["content_status"] == "included"
+    context = payload["request"]["context"]["evidence_context"]
+    assert context[0]["citation"] == "[evidence:README.md]"
+    assert context[0]["content"] == "Public documentation"
+    assert payload["evidence_sources"] == [context[0]["source_url"], context[1]["source_url"]]
 
 
 def test_private_project_evidence_is_denied() -> None:

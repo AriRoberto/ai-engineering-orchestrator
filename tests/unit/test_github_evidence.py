@@ -5,6 +5,7 @@ import pytest
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import AgentKind, ExecutionStatus
+from ai_engineering.evidence.context import EvidenceContextBuilder
 from ai_engineering.evidence.github import (
     EvidenceCollectionError,
     GitHubEvidenceCollector,
@@ -201,3 +202,31 @@ def test_non_utf8_content_is_not_exposed() -> None:
     )
     assert result.files[0].content_status == "non-utf8"
     assert result.files[0].content is None
+
+
+def test_context_builder_applies_budget_and_preserves_citations() -> None:
+    transport = FakeTransport(
+        {
+            "sha": "a" * 40,
+            "truncated": False,
+            "tree": [
+                {"path": "README.md", "type": "blob", "size": 10, "sha": "b" * 40},
+                {"path": "docs/guide.md", "type": "blob", "size": 10, "sha": "c" * 40},
+            ],
+        },
+        {"README.md": b"abcdefghij", "docs/guide.md": b"klmnopqrst"},
+    )
+    collection = GitHubEvidenceCollector(transport).collect(
+        parse_public_github_project(project_config()), include_content=True
+    )
+
+    context = EvidenceContextBuilder(max_chars=12).build(collection)
+
+    assert [item.citation for item in context] == [
+        "[evidence:README.md]",
+        "[evidence:docs/guide.md]",
+    ]
+    assert context[0].content == "abcdefghij"
+    assert context[1].content == "kl"
+    assert context[1].truncated is True
+    assert sum(len(item.content) for item in context) == 12

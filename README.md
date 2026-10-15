@@ -35,7 +35,8 @@ com quatro novos agentes; recursos futuros continuam identificados explicitament
 | Memória persistente de execuções | Implementado com PostgreSQL |
 | MCP com ferramentas governadas | Implementado com servidor simulado e auditoria |
 | Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
-| Evidências reais do piloto público | Implementado — metadados e conteúdo textual controlado |
+| Evidências reais do piloto público | Implementado — conteúdo controlado e contexto citado |
+| Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
 | Piloto privado autenticado | Planejado — Fase 4 |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
 
@@ -150,8 +151,10 @@ Especialização da Fase 3:
 
 Piloto público da Fase 4:
 
+- [Plano oficial de implementação](docs/pt-BR/plano-de-implementacao.md)
 - [Coleta governada de evidências](docs/pt-BR/fase-4-piloto-publico.md)
 - [Laboratório prático da Fase 4](docs/pt-BR/laboratorio-fase4.md)
+- [Avaliação adversarial da Fase 4](docs/pt-BR/avaliacao-adversarial-fase4.md)
 
 ## Exemplo de uso
 
@@ -221,13 +224,16 @@ Nenhum piloto é modificado na Fase 1.
 
 ## Roteiro de evolução
 
+O detalhamento oficial, critérios de conclusão e ordem dos incrementos estão no
+[Plano de implementação](docs/pt-BR/plano-de-implementacao.md).
+
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
 2. **Inteligência e RAG:** fundação, RAG, memória persistente e governança MCP implementados; custos
    oficiais, embeddings de produção e transportes MCP reais permanecem em evolução.
 3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados e
    integrados aos estados das evidências coletadas.
-4. **Pilotos:** inventário e conteúdo textual controlado do piloto público implementados; análise
-   semântica com citações e acesso autenticado ao piloto privado permanecem pendentes.
+4. **Pilotos:** inventário, conteúdo controlado, contexto citado e corpus adversarial inicial do
+   piloto público implementados; acesso autenticado ao piloto privado permanece pendente.
 5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
 
 ## Contribuição, licença e contato

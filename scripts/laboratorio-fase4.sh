@@ -45,7 +45,7 @@ curl --fail --silent --show-error \
     "include_content": true
   }' -o "$temp_dir/execucao.json"
 json_assert "$temp_dir/execucao.json" \
-  'data["status"] == "COMPLETED" and data["request"]["context"]["evidence"]["provider"] == "github" and data["request"]["context"]["evidence"]["read_only"] is True and len(data["request"]["context"]["evidence"]["revision"]) == 40 and any(item["content_status"] in ("included", "redacted") and len(item["content_sha256"]) == 64 for item in data["request"]["context"]["evidence"]["files"]) and all(item.get("content") is None for item in data["request"]["context"]["evidence"]["files"] if item["content_status"] == "quarantined")'
+  'data["status"] == "COMPLETED" and data["request"]["context"]["evidence"]["provider"] == "github" and data["request"]["context"]["evidence"]["read_only"] is True and len(data["request"]["context"]["evidence"]["revision"]) == 40 and any(item["content_status"] in ("included", "redacted") and len(item["content_sha256"]) == 64 for item in data["request"]["context"]["evidence"]["files"]) and all(item.get("content") is None for item in data["request"]["context"]["evidence"]["files"] if item["content_status"] == "quarantined") and len(data["request"]["context"]["evidence_context"]) > 0 and all(item["citation"].startswith("[evidence:") and len(item["content_sha256"]) == 64 for item in data["request"]["context"]["evidence_context"]) and len(data["evidence_sources"]) == len(data["request"]["context"]["evidence_context"])'
 
 execution_id="$(python3 - "$temp_dir/execucao.json" <<'PY'
 import json

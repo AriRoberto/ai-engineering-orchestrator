@@ -8,6 +8,7 @@ from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.postgres_repository import PostgresExecutionRepository
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import Execution, TaskRequest
+from ai_engineering.evidence.context import EvidenceContextBuilder
 from ai_engineering.evidence.github import (
     EvidenceCollectionError,
     GitHubEvidenceCollector,
@@ -104,6 +105,7 @@ evidence_execution_service = EvidenceExecutionService(
         secret_redactor=SecretRedactor(),
     ),
     orchestrator,
+    EvidenceContextBuilder(settings.evidence_context_max_chars),
 )
 
 

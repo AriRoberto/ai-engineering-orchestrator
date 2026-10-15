@@ -1,6 +1,6 @@
 # Guia de arquitetura — estado atual
 
-Este guia descreve a arquitetura implementada até o primeiro incremento da Fase 4. O histórico das
+Este guia descreve a arquitetura implementada até o quarto incremento da Fase 4. O histórico das
 decisões permanece nos ADRs e nos documentos de cada fase.
 
 ## Visão geral
@@ -22,6 +22,7 @@ flowchart LR
     API --> EC[EvidenceExecutionService]
     EC --> GH[GitHub Tree e Contents APIs]
     EC --> CG[Guard + redaction]
+    CG --> CB[Contexto limitado + citações]
     EC --> O
 ```
 
@@ -122,7 +123,12 @@ O cliente nunca fornece a URL remota. Cada evidência registra caminho, SHA, tam
 revisão coletada. Quando solicitado, texto UTF-8 recebe SHA-256, redaction de padrões sensíveis e
 avaliação contra prompt injection. Itens suspeitos são persistidos somente com estado de quarentena
 e hash, sem conteúdo. Tudo entra em `TaskRequest.context.evidence` e sobrevive junto da execução.
-Nenhum código do piloto é executado e o texto ainda não é encaminhado automaticamente ao LLM.
+Nenhum código do piloto é executado; somente o subconjunto aprovado e orçado pode participar da
+consolidação habilitada.
+
+O `EvidenceContextBuilder` aceita somente conteúdo aprovado, aplica orçamento global de caracteres
+e gera citações estáveis. O orquestrador registra as URLs em `evidence_sources` e, quando o LLM está
+habilitado, apresenta os trechos como dados externos não confiáveis separados das instruções.
 
 ## Governança e segurança
 
@@ -161,6 +167,9 @@ volume local existente sem exigir sua remoção.
 - [Laboratório da Fase 4](laboratorio-fase4.md)
 - [ADR-003 — evidências públicas governadas](../architecture/ADR-003-governed-public-evidence.md)
 - [ADR-004 — conteúdo textual controlado](../architecture/ADR-004-controlled-text-evidence.md)
+- [ADR-005 — contexto citado](../architecture/ADR-005-cited-evidence-context.md)
+- [Plano oficial de implementação](plano-de-implementacao.md)
+- [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
 - [Política de segurança](../../SECURITY.md)
 
 ## Próximos limites arquiteturais

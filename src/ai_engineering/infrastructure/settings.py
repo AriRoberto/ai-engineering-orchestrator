@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     evidence_max_content_files: int = 8
     evidence_max_content_file_bytes: int = 64_000
     evidence_max_content_total_bytes: int = 256_000
+    evidence_context_max_chars: int = 12_000
     model_config = SettingsConfigDict(env_prefix="AIEO_", env_file=".env", extra="ignore")
 
 

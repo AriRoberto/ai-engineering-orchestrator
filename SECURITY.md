@@ -27,6 +27,13 @@ quarentena sem texto persistido. Diretórios gerados ou de dependências vendori
 da seleção. O projeto privado `app-ams` permanece bloqueado sem autenticação.
 
 Redaction baseada em padrões reduz exposição acidental, mas não prova ausência de segredos. O
-conteúdo aprovado ainda é dado não confiável e, neste incremento, não é enviado automaticamente ao
-LLM nem executado.
+conteúdo aprovado ainda é dado não confiável e nunca é executado. Quando `include_content=true` e a
+consolidação está habilitada, somente o contexto aprovado e limitado é apresentado ao provedor em
+uma seção marcada como não confiável, com instrução explícita para não seguir comandos externos.
+Essa separação não elimina avaliações adversariais antes do uso de um provedor real.
+
+O corpus em `evals/evidence-security.yaml` testa casos benignos, prompt injection, evasões simples e
+redaction. `make eval-fase4` exige 100% dos casos conhecidos e falha com código não zero em caso de
+regressão. O guard normaliza Unicode, remove caracteres invisíveis conhecidos e compacta whitespace
+antes da análise. O corpus reduz risco conhecido, mas não constitui garantia de segurança completa.
 

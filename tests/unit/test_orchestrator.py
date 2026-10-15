@@ -157,3 +157,37 @@ def test_llm_input_budget_fails_closed() -> None:
     )
     assert execution.status == ExecutionStatus.FAILED
     assert execution.error == "ValueError"
+
+
+def test_safe_evidence_context_is_cited_and_recorded() -> None:
+    orchestrator = AIEngineeringOrchestrator(
+        default_agents(),
+        InMemoryExecutionRepository(),
+        llm=SimulatedLLMProvider(),
+    )
+    source = "https://github.com/example/project/blob/abc/README.md"
+    execution = orchestrator.execute(
+        TaskRequest(
+            project_id="demo-project",
+            prompt="Revise a documentação",
+            context={
+                "files": ["README.md"],
+                "evidence_context": [
+                    {
+                        "citation": "[evidence:README.md]",
+                        "path": "README.md",
+                        "source_url": source,
+                        "content_sha256": "a" * 64,
+                        "content": "Documentação pública aprovada.",
+                        "truncated": False,
+                    }
+                ],
+            },
+        )
+    )
+
+    assert execution.status == ExecutionStatus.COMPLETED
+    assert execution.evidence_sources == [source]
+    assert execution.plan[0] == "Analisar evidências textuais seguras com citações"
+    assert execution.consolidated_result is not None
+    assert "[evidence:README.md]" in execution.consolidated_result
