@@ -50,3 +50,68 @@ def test_knowledge_and_simulated_llm_endpoints() -> None:
     assert llm.status_code == 200
     assert llm.json()["simulated"] is True
     assert llm.json()["usage"]["estimated"] is True
+
+
+def test_governed_mcp_endpoints() -> None:
+    tools = client.get("/v1/mcp/tools", params={"project_id": "laboratorio-fase2"})
+    assert tools.status_code == 200
+    assert {tool["name"] for tool in tools.json()} == {"project_summary", "publish_change"}
+
+    invoked = client.post(
+        "/v1/mcp/invocations",
+        json={
+            "project_id": "laboratorio-fase2",
+            "server": "project-catalog",
+            "tool": "project_summary",
+            "arguments": {},
+        },
+    )
+    assert invoked.status_code == 200
+    assert invoked.json()["status"] == "COMPLETED"
+    assert invoked.json()["result"]["simulated"] is True
+
+    pending = client.post(
+        "/v1/mcp/invocations",
+        json={
+            "project_id": "laboratorio-fase2",
+            "server": "project-catalog",
+            "tool": "publish_change",
+            "arguments": {"branch": "agents/devops/feat-demo-001"},
+        },
+    )
+    assert pending.json()["status"] == "WAITING_APPROVAL"
+
+
+def test_phase3_specialists_are_available_and_executable() -> None:
+    agents = client.get("/v1/agents")
+    assert agents.status_code == 200
+    agent_ids = {item["id"] for item in agents.json()}
+    assert {"database", "qa", "security", "documentation"} <= agent_ids
+
+    execution = client.post(
+        "/v1/executions",
+        json={
+            "project_id": "laboratorio-fase2",
+            "prompt": "Revise banco de dados, QA, segurança e documentação",
+            "demo": True,
+            "context": {
+                "files": [
+                    "migrations/001_schema.sql",
+                    "tests/test_api.py",
+                    ".github/workflows/ci.yml",
+                    "SECURITY.md",
+                    "README.md",
+                    "CHANGELOG.md",
+                ]
+            },
+        },
+    )
+    assert execution.status_code == 201
+    payload = execution.json()
+    assert payload["status"] == "COMPLETED"
+    assert {result["agent"] for result in payload["results"]} == {
+        "database",
+        "qa",
+        "security",
+        "documentation",
+    }

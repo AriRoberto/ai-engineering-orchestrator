@@ -9,6 +9,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY apps ./apps
+COPY configs ./configs
 RUN pip install --upgrade pip && pip install .
 USER app
 EXPOSE 8000

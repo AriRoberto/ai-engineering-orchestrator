@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from uuid import UUID
 
 from ai_engineering.agents.base import EngineeringAgent
-from ai_engineering.application.repository import InMemoryExecutionRepository
+from ai_engineering.application.repository import ExecutionRepository
 from ai_engineering.domain.models import (
     AgentKind,
     Execution,
@@ -21,8 +21,8 @@ class AIEngineeringOrchestrator:
     def __init__(
         self,
         agents: dict[AgentKind, EngineeringAgent],
-        repository: InMemoryExecutionRepository,
-        max_steps: int = 8,
+        repository: ExecutionRepository,
+        max_steps: int = 12,
         agent_timeout_seconds: float = 5.0,
         max_retries: int = 1,
         knowledge: KnowledgeService | None = None,
@@ -47,6 +47,29 @@ class AIEngineeringOrchestrator:
             AgentKind.KUBERNETES: ("kubernetes", "k8s", "helm", "deployment"),
             AgentKind.DEVOPS: ("pipeline", "ci/cd", "docker", "git", "release"),
             AgentKind.LINUX_SRE: ("linux", "incident", "log", "sre", "servidor"),
+            AgentKind.DATABASE: (
+                "banco de dados",
+                "database",
+                "postgres",
+                "sql",
+                "migração",
+                "migration",
+            ),
+            AgentKind.QA: ("qa", "qualidade", "testes", "coverage", "cobertura"),
+            AgentKind.SECURITY: (
+                "segurança",
+                "security",
+                "vulnerabilidade",
+                "credencial",
+                "segredo",
+            ),
+            AgentKind.DOCUMENTATION: (
+                "documentação",
+                "documentation",
+                "readme",
+                "changelog",
+                "adr",
+            ),
             AgentKind.SOFTWARE_ENGINEER: (
                 "código",
                 "code",
@@ -171,8 +194,8 @@ class AIEngineeringOrchestrator:
         assert last_error is not None
         raise last_error
 
-    def cancel(self, execution_id: UUID) -> Execution | None:
-        execution = self.repository.get(execution_id)
+    def cancel(self, execution_id: UUID, project_id: str) -> Execution | None:
+        execution = self.repository.get(execution_id, project_id)
         if execution and execution.status not in {
             ExecutionStatus.COMPLETED,
             ExecutionStatus.FAILED,

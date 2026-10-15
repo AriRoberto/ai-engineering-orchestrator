@@ -7,6 +7,12 @@
 - Documentação integralmente em português e referências oficiais atualizadas.
 - Recuperação de conhecimento integrada ao orquestrador, consolidação por LLM, fontes por execução
   e limites com contabilização explicitamente estimada de tokens.
+- Persistência completa de execuções no PostgreSQL, incluindo plano, resultados, fontes, uso de LLM
+  e linha do tempo, com validação de sobrevivência ao reinício da API no laboratório da Fase 2.
+- Gateway MCP governado com allowlist por projeto, validação de schemas, classificação de risco,
+  aprovação para escrita e auditoria persistente de chamadas e bloqueios.
+- Primeiro incremento da Fase 3 com agentes de Banco de Dados, QA, Segurança e Documentação,
+  roteamento determinístico, resultados estruturados e laboratório reproduzível dedicado.
 
 ## 0.1.0 - 2026-10-13
 

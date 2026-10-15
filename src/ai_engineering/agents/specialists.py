@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ai_engineering.agents.base import EngineeringAgent
+from ai_engineering.agents.phase3 import DatabaseAgent, DocumentationAgent, QAAgent, SecurityAgent
 from ai_engineering.domain.models import AgentKind, AgentResult, TaskRequest
 
 
@@ -98,5 +99,9 @@ def default_agents() -> dict[AgentKind, EngineeringAgent]:
         DevOpsAgent(),
         KubernetesAgent(),
         LinuxSREAgent(),
+        DatabaseAgent(),
+        QAAgent(),
+        SecurityAgent(),
+        DocumentationAgent(),
     ]
     return {agent.kind: agent for agent in agents}

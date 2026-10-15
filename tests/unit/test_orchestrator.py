@@ -56,6 +56,18 @@ def test_software_agent_detects_example_stack() -> None:
     assert "Stack detectada: JavaScript/TypeScript" in findings
 
 
+def test_routes_all_phase3_specialists() -> None:
+    selected = make_orchestrator().route(
+        "Revise banco de dados, QA, segurança e documentação"
+    )
+    assert selected == [
+        AgentKind.DATABASE,
+        AgentKind.QA,
+        AgentKind.SECURITY,
+        AgentKind.DOCUMENTATION,
+    ]
+
+
 class FlakyAgent(EngineeringAgent):
     kind = AgentKind.SOFTWARE_ENGINEER
     description = "Test double"
