@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3
 
 install:
 	python -m pip install -e '.[dev]'
@@ -29,4 +29,7 @@ verificar:
 
 lab-fase2:
 	./scripts/laboratorio-fase2.sh
+
+lab-fase3:
+	./scripts/laboratorio-fase3.sh
 

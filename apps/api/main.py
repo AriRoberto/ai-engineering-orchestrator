@@ -5,12 +5,25 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from ai_engineering.agents.specialists import default_agents
+from ai_engineering.application.postgres_repository import PostgresExecutionRepository
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import Execution, TaskRequest
 from ai_engineering.infrastructure.logging import configure_logging
 from ai_engineering.infrastructure.settings import get_settings
 from ai_engineering.integrations.llm.base import LLMRequest
 from ai_engineering.integrations.llm.providers import build_llm_provider
+from ai_engineering.integrations.mcp.client import SimulatedProjectMCPClient
+from ai_engineering.integrations.mcp.models import (
+    MCPInvocation,
+    MCPInvocationRequest,
+    MCPToolDefinition,
+)
+from ai_engineering.integrations.mcp.policy import MCPPolicyStore
+from ai_engineering.integrations.mcp.repository import (
+    MCPAuditRepository,
+    PostgresMCPAuditRepository,
+)
+from ai_engineering.integrations.mcp.service import MCPGateway
 from ai_engineering.knowledge.database import PostgresKnowledgeRepository
 from ai_engineering.knowledge.models import (
     FeedbackCreate,
@@ -30,7 +43,11 @@ from ai_engineering.security.content import KnowledgeContentGuard
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = structlog.get_logger()
-repository = InMemoryExecutionRepository()
+repository = (
+    PostgresExecutionRepository(settings.database_url)
+    if settings.database_url
+    else InMemoryExecutionRepository()
+)
 knowledge_repository = (
     PostgresKnowledgeRepository(settings.database_url)
     if settings.database_url
@@ -44,6 +61,16 @@ knowledge_service = KnowledgeService(
     settings.knowledge_chunk_overlap,
 )
 llm_provider = build_llm_provider(settings.llm_provider, settings.llm_model)
+mcp_audit_repository = (
+    PostgresMCPAuditRepository(settings.database_url)
+    if settings.database_url
+    else MCPAuditRepository()
+)
+mcp_gateway = MCPGateway(
+    [SimulatedProjectMCPClient()],
+    MCPPolicyStore(settings.mcp_project_config_dir),
+    mcp_audit_repository,
+)
 orchestrator = AIEngineeringOrchestrator(
     default_agents(),
     repository,
@@ -100,21 +127,21 @@ def create_execution(request: TaskRequest) -> Execution:
 
 
 @app.get("/v1/executions", response_model=list[Execution], tags=["executions"])
-def list_executions() -> list[Execution]:
-    return repository.list()
+def list_executions(project_id: str) -> list[Execution]:
+    return repository.list(project_id)
 
 
 @app.get("/v1/executions/{execution_id}", response_model=Execution, tags=["executions"])
-def get_execution(execution_id: UUID) -> Execution:
-    execution = repository.get(execution_id)
+def get_execution(execution_id: UUID, project_id: str) -> Execution:
+    execution = repository.get(execution_id, project_id)
     if not execution:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
     return execution
 
 
 @app.post("/v1/executions/{execution_id}/cancel", response_model=Execution, tags=["executions"])
-def cancel_execution(execution_id: UUID) -> Execution:
-    execution = orchestrator.cancel(execution_id)
+def cancel_execution(execution_id: UUID, project_id: str) -> Execution:
+    execution = orchestrator.cancel(execution_id, project_id)
     if not execution:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
     return execution
@@ -175,3 +202,18 @@ def generate_with_llm(request: LLMGenerateRequest) -> dict[str, object]:
             "estimated_cost_usd": response.usage.estimated_cost_usd,
         },
     }
+
+
+@app.get("/v1/mcp/tools", response_model=list[MCPToolDefinition], tags=["mcp"])
+def list_mcp_tools(project_id: str) -> list[MCPToolDefinition]:
+    return mcp_gateway.list_tools(project_id)
+
+
+@app.post("/v1/mcp/invocations", response_model=MCPInvocation, tags=["mcp"])
+def invoke_mcp_tool(request: MCPInvocationRequest) -> MCPInvocation:
+    return mcp_gateway.invoke(request)
+
+
+@app.get("/v1/mcp/invocations", response_model=list[MCPInvocation], tags=["mcp"])
+def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
+    return mcp_audit_repository.list(project_id)

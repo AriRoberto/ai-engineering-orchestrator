@@ -11,6 +11,10 @@ Ao final, você terá validado:
 - ingestão e fragmentação de um documento;
 - busca híbrida e isolamento entre projetos;
 - recuperação de conhecimento dentro de uma execução;
+- persistência da execução e da auditoria MCP após reiniciar a API;
+- catálogo MCP filtrado e isolado por projeto;
+- chamada MCP somente leitura com schemas validados;
+- interrupção de ferramenta MCP de escrita para aprovação humana;
 - consolidação simulada e contabilização estimada de tokens;
 - bloqueio de um padrão de prompt injection;
 - registro de feedback humano.
@@ -25,7 +29,7 @@ make verificar
 make lab-fase2
 ```
 
-O script constrói as imagens, inicia os containers e executa sete verificações. Ao final, deve
+O script constrói as imagens, inicia os containers e executa onze verificações. Ao final, deve
 mostrar `Laboratório concluído com sucesso`, o UUID da execução e o endereço do Swagger.
 
 ## Inspeção manual

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     demo_mode: bool = True
-    max_steps: int = 8
+    max_steps: int = 12
     agent_timeout_seconds: float = 5.0
     max_retries: int = 1
     database_url: str | None = None
@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 16
     knowledge_chunk_size: int = 800
     knowledge_chunk_overlap: int = 100
+    mcp_project_config_dir: str = "configs/projects"
     model_config = SettingsConfigDict(env_prefix="AIEO_", env_file=".env", extra="ignore")
 
 

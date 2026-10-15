@@ -34,6 +34,43 @@ Configurações:
 - `AIEO_MAX_LLM_INPUT_TOKENS`: teto estimado de entrada por execução;
 - `AIEO_MAX_LLM_OUTPUT_TOKENS`: teto de saída por execução.
 
+## Terceiro incremento: memória persistente de execuções
+
+Quando `AIEO_DATABASE_URL` está configurada, cada execução passa a ser gravada no PostgreSQL com a
+solicitação, estado, plano, resultados, fontes de conhecimento, uso de LLM e linha do tempo completa.
+Os endpoints de consulta usam o mesmo repositório, portanto as execuções continuam disponíveis após
+reiniciar a API. Sem banco configurado, o repositório em memória permanece como fallback explícito
+para testes unitários e desenvolvimento mínimo.
+
+Listagem, consulta individual e cancelamento exigem `project_id`; o repositório aplica esse filtro
+na leitura para impedir que uma execução persistida seja exposta por outro projeto.
+
+A migração `002_phase2_executions.sql` cria a tabela e os índices operacionais. A aplicação também
+faz a criação idempotente dessa tabela ao conectar, permitindo atualizar volumes do Compose criados
+antes deste incremento sem apagar os dados de conhecimento existentes.
+
+## Quarto incremento: gateway MCP governado
+
+O gateway MCP expõe somente ferramentas presentes na allowlist do projeto. Cada ferramenta possui
+nome qualificado, nível de risco e schemas JSON de entrada e saída. A política é aplicada antes da
+chamada, o resultado é validado antes de chegar ao consumidor e todas as decisões — inclusive
+negações e interrupções — são registradas em `mcp_invocations`.
+
+O laboratório usa o servidor determinístico `project-catalog`, que não acessa rede nem produz
+efeitos reais. `project_summary` demonstra leitura isolada; `publish_change` demonstra a interrupção
+`WAITING_APPROVAL`. Projetos em modo `read-only` negam escrita mesmo quando a requisição declara
+aprovação. A identidade do aprovador ainda não é autenticada, portanto efeitos externos permanecem
+desabilitados neste incremento.
+
+Endpoints adicionados:
+
+- `GET /v1/mcp/tools?project_id=...`;
+- `POST /v1/mcp/invocations`;
+- `GET /v1/mcp/invocations?project_id=...`.
+
+A decisão e seus limites estão no
+[ADR-002](../architecture/ADR-002-governed-mcp-gateway.md).
+
 ## Limites intencionais
 
 O embedding determinístico de 16 dimensões existe para testes e demonstração local. Ele não é
@@ -41,8 +78,10 @@ apresentado como modelo semântico de produção. O provedor OpenAI somente é a
 `AIEO_LLM_PROVIDER=openai-agents` e credencial fornecida fora do repositório. O padrão permanece
 `simulated` e não realiza chamadas pagas.
 
-A memória de execuções ainda usa o repositório em memória da Fase 1. Persistência completa das
-execuções, medição oficial de uso/custo e embeddings de produção permanecem pendentes.
+A medição oficial de uso/custo, embeddings de produção, transporte para servidores MCP reais e
+autenticação de aprovadores permanecem pendentes. O payload completo em
+JSON preserva a auditoria, mas consultas analíticas detalhadas por evento ainda exigirão projeções
+específicas em um incremento futuro.
 
 ## Endpoints
 

@@ -9,9 +9,9 @@
 
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
-Fase 1 entrega um backend funcional e um modo demo gratuito. A primeira entrega incremental da
-Fase 2 adiciona persistência de conhecimento e um contrato de LLM; recursos ainda futuros aparecem
-claramente no roadmap e não são apresentados como prontos.
+Fase 1 entregou o backend e o modo demo. A Fase 2 já incorporou conhecimento persistente, RAG,
+contrato de LLM, memória de execuções e um gateway MCP governado. A Fase 3 iniciou a especialização
+com quatro novos agentes; recursos futuros continuam identificados explicitamente no roadmap.
 
 ## Proposta de valor
 
@@ -26,14 +26,15 @@ claramente no roadmap e não são apresentados como prontos.
 | Capacidade | Estado |
 |---|---|
 | FastAPI, health check e OpenAPI | Implementado |
-| Orquestrador determinístico e quatro agentes | Implementado |
+| Orquestrador determinístico e oito agentes | Implementado |
 | Modo demo e ferramentas simuladas | Implementado |
 | Governança Git e aprovação para escrita | Implementado |
-| PostgreSQL, pgvector, ingestão e busca híbrida | Parcial — fundação da Fase 2 implementada |
+| PostgreSQL, pgvector, ingestão e busca híbrida | Implementado na fundação da Fase 2 |
 | Contrato LLM e adaptador OpenAI Agents SDK | Parcial — provedor simulado é o padrão |
 | RAG integrado ao fluxo do orquestrador | Implementado com embeddings de demonstração |
-| MCP e memória persistente de execuções | Planejado — próximos incrementos da Fase 2 |
-| Database, QA, Security e Documentation Agents | Planejado — Fase 3 |
+| Memória persistente de execuções | Implementado com PostgreSQL |
+| MCP com ferramentas governadas | Implementado com servidor simulado e auditoria |
+| Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
 | Diagnósticos reais dos pilotos | Planejado — Fase 4 |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
 
@@ -48,15 +49,20 @@ flowchart LR
     P --> DO[DevOps]
     P --> K8[Kubernetes]
     P --> SR[Linux/SRE]
+    P --> DB[Database]
+    P --> QA[QA]
+    P --> SC[Security]
+    P --> DC[Documentation]
     O --> G[Git Governance Service]
-    O --> ER[(Repositório de execuções)]
+    O --> ER[(Execuções persistentes)]
     G --> H{Aprovação humana}
     H -. fase futura .-> GH[GitHub / Draft PR]
     API --> KB[(PostgreSQL + pgvector)]
     API --> LLM[Adaptadores de LLM]
-    O -. próximo incremento .-> KB
-    O -. próximo incremento .-> LLM
-    O -. fase 2 futura .-> MCP[MCP integrations]
+    O --> KB
+    O --> LLM
+    O --> MCP[Gateway MCP governado]
+    MCP --> MA[(Auditoria MCP)]
 ```
 
 O domínio define contratos e estados; a aplicação coordena casos de uso; adaptadores de
@@ -69,6 +75,10 @@ permissões. A decisão de orquestração está no [ADR-001](docs/architecture/A
 - **DevOps:** avalia evidências de Git, CI/CD, containers e releases.
 - **Kubernetes:** identifica evidências de manifests e Helm.
 - **Linux/SRE:** produz diagnóstico baseado em evidências, sem comandos arbitrários no host.
+- **Database:** identifica schemas, SQL e migrações versionadas.
+- **QA:** correlaciona arquivos de teste e automação de CI.
+- **Security:** identifica controles e nomes de arquivos potencialmente sensíveis.
+- **Documentation:** inventaria Markdown e verifica documentos essenciais.
 
 Todos implementam um contrato comum e retornam resultado estruturado. No modo demo, cada resultado
 é marcado com `simulated: true`.
@@ -76,8 +86,9 @@ Todos implementam um contrato comum e retornam resultado estruturado. No modo de
 ## Estados e limites
 
 `PENDING → PLANNING → RUNNING → COMPLETED`, com caminhos explícitos para `WAITING_APPROVAL`,
-`FAILED` e `CANCELLED`. A fundação inclui limite de passos, timeout por agente e retry limitado.
-Controles de tokens/custo e persistência distribuída serão adicionados junto do adaptador LLM.
+`FAILED` e `CANCELLED`. A fundação inclui limite de passos, timeout por agente, retry limitado e
+persistência integral das execuções no PostgreSQL. O uso de tokens é estimado; custo oficial ainda
+depende dos dados reportados pelo provedor e de uma tabela de preços validada.
 
 ## Segurança e governança Git
 
@@ -131,6 +142,11 @@ Fundação da Fase 2:
 
 - [Inteligência e conhecimento](docs/pt-BR/fase-2-fundacao.md)
 
+Especialização da Fase 3:
+
+- [Agentes especializados](docs/pt-BR/fase-3-especializacao.md)
+- [Laboratório prático da Fase 3](docs/pt-BR/laboratorio-fase3.md)
+
 ## Exemplo de uso
 
 ```bash
@@ -149,14 +165,17 @@ Endpoints atuais:
 - `GET /health`
 - `GET /v1/agents`
 - `POST /v1/executions`
-- `GET /v1/executions`
-- `GET /v1/executions/{id}`
-- `POST /v1/executions/{id}/cancel`
+- `GET /v1/executions?project_id=...`
+- `GET /v1/executions/{id}?project_id=...`
+- `POST /v1/executions/{id}/cancel?project_id=...`
 - `POST /v1/knowledge/documents`
 - `POST /v1/knowledge/search`
 - `DELETE /v1/knowledge/documents/{id}`
 - `POST /v1/feedback`
 - `POST /v1/llm/generate`
+- `GET /v1/mcp/tools?project_id=...`
+- `POST /v1/mcp/invocations`
+- `GET /v1/mcp/invocations?project_id=...`
 
 ## Adicionar projetos e agentes
 
@@ -169,9 +188,10 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 A fundação da Fase 2 já inclui um contrato configurável de LLM, provedor simulado, adaptador opcional
 para OpenAI Agents SDK, ingestão protegida, recuperação híbrida com fontes, PostgreSQL/pgvector e
 feedback persistente. Recuperação e LLM já participam do fluxo do orquestrador com limites de tokens
-e uso estimado explicitamente identificado. Medição oficial de custos e persistência das execuções
-continuam pendentes. MCP será integrado por
-adaptadores com allowlists, schemas validados e escopos por projeto. O aprendizado ocorre por memória
+e uso estimado explicitamente identificado. As execuções e suas linhas do tempo são persistidas no
+PostgreSQL. Medição oficial de custos continua pendente. O gateway MCP aplica allowlists, schemas,
+aprovação e escopos por projeto; o transporte real permanece desacoplado e o laboratório usa um
+servidor simulado sem efeitos externos. O aprendizado ocorre por memória
 persistente e feedback validado — não por alegação de retreinamento automático.
 
 ## Testes e qualidade
@@ -195,9 +215,10 @@ Nenhum piloto é modificado na Fase 1.
 ## Roteiro de evolução
 
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
-2. **Inteligência e RAG:** fundação e integração ao fluxo implementadas; memória persistente, custos
-   oficiais, embeddings de produção e MCP permanecem em evolução.
-3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação.
+2. **Inteligência e RAG:** fundação, RAG, memória persistente e governança MCP implementados; custos
+   oficiais, embeddings de produção e transportes MCP reais permanecem em evolução.
+3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados;
+   coleta governada de evidências reais permanece pendente.
 4. **Pilotos:** diagnósticos autenticados e somente leitura; mudanças apenas após aprovação específica.
 5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
 

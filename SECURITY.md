@@ -9,3 +9,11 @@ O serviço opera somente para leitura por padrão. Solicitações de escrita par
 `GitGovernanceService`. Esta fundação não executa comandos arbitrários no host nem aceita
 credenciais de repositórios.
 
+Ferramentas MCP são negadas por padrão. Cada projeto possui uma allowlist de nomes qualificados,
+entradas e saídas são validadas por schema e toda tentativa é auditada. Ferramentas destrutivas são
+bloqueadas; ferramentas de escrita exigem revisão humana e não podem operar em projetos
+`read-only`. O servidor do laboratório é simulado e não recebe credenciais nem acesso à rede.
+
+O agente de Segurança da Fase 3 examina somente nomes de arquivos fornecidos como evidência. Ele não
+lê segredos, não abre arquivos locais e não substitui análise de dependências, SAST ou revisão humana.
+

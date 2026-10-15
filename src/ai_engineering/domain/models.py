@@ -23,6 +23,10 @@ class AgentKind(StrEnum):
     DEVOPS = "devops"
     KUBERNETES = "kubernetes"
     LINUX_SRE = "linux-sre"
+    DATABASE = "database"
+    QA = "qa"
+    SECURITY = "security"
+    DOCUMENTATION = "documentation"
 
 
 class TaskRequest(BaseModel):

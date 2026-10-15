@@ -6,4 +6,7 @@ visibility: public
 mode: read-only
 knowledge_namespace: project/app-financas
 verified: 2026-10-13
+mcp:
+  allowed_tools:
+    - project-catalog:project_summary
 
