@@ -1,6 +1,6 @@
 # Guia de arquitetura — estado atual
 
-Este guia descreve a arquitetura implementada até o primeiro incremento da Fase 3. O histórico das
+Este guia descreve a arquitetura implementada até o primeiro incremento da Fase 4. O histórico das
 decisões permanece nos ADRs e nos documentos de cada fase.
 
 ## Visão geral
@@ -19,6 +19,10 @@ flowchart LR
     M --> S[MCPClient]
     M --> AU[(Auditoria MCP)]
     S --> D[Servidor simulado]
+    API --> EC[EvidenceExecutionService]
+    EC --> GH[GitHub Tree e Contents APIs]
+    EC --> CG[Guard + redaction]
+    EC --> O
 ```
 
 A API valida contratos com Pydantic. O orquestrador mantém roteamento e limites determinísticos,
@@ -106,6 +110,20 @@ Chamadas MCP são persistidas em `mcp_invocations`, inclusive negações, falhas
 interrupções para aprovação. A identidade declarada em `approved_by` ainda não tem autenticação
 forte; por isso integrações com efeitos reais permanecem desabilitadas.
 
+## Evidências públicas governadas
+
+`EvidenceExecutionService` carrega a configuração confiável do projeto e somente permite coleta
+quando a visibilidade é pública e o modo é somente leitura. `GitHubEvidenceCollector` consulta a
+árvore da branch configurada, recusa respostas truncadas, filtra arquivos relevantes e aplica
+limites de quantidade e tamanho. A opção `include_content` habilita um segundo orçamento, menor e
+independente, para baixar textos priorizados pela Contents API.
+
+O cliente nunca fornece a URL remota. Cada evidência registra caminho, SHA, tamanho e URL ligada à
+revisão coletada. Quando solicitado, texto UTF-8 recebe SHA-256, redaction de padrões sensíveis e
+avaliação contra prompt injection. Itens suspeitos são persistidos somente com estado de quarentena
+e hash, sem conteúdo. Tudo entra em `TaskRequest.context.evidence` e sobrevive junto da execução.
+Nenhum código do piloto é executado e o texto ainda não é encaminhado automaticamente ao LLM.
+
 ## Governança e segurança
 
 - leitura é o padrão;
@@ -113,6 +131,7 @@ forte; por isso integrações com efeitos reais permanecem desabilitadas.
 - ferramentas MCP fora da allowlist falham fechadas;
 - schemas são verificados antes e depois de chamadas MCP;
 - conteúdo RAG é tratado como dado não confiável;
+- evidência textual é opt-in, limitada, higienizada e colocada em quarentena quando suspeita;
 - credenciais não são incluídas na imagem nem no repositório;
 - containers executam sem root, sem capabilities e com filesystem somente leitura.
 
@@ -138,6 +157,10 @@ volume local existente sem exigir sua remoção.
 - [Laboratório da Fase 2](laboratorio-fase2.md)
 - [Especialização da Fase 3](fase-3-especializacao.md)
 - [Laboratório da Fase 3](laboratorio-fase3.md)
+- [Piloto público da Fase 4](fase-4-piloto-publico.md)
+- [Laboratório da Fase 4](laboratorio-fase4.md)
+- [ADR-003 — evidências públicas governadas](../architecture/ADR-003-governed-public-evidence.md)
+- [ADR-004 — conteúdo textual controlado](../architecture/ADR-004-controlled-text-evidence.md)
 - [Política de segurança](../../SECURITY.md)
 
 ## Próximos limites arquiteturais
