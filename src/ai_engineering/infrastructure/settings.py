@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     knowledge_chunk_size: int = 800
     knowledge_chunk_overlap: int = 100
     mcp_project_config_dir: str = "configs/projects"
+    github_evidence_timeout_seconds: float = 10.0
+    evidence_max_files: int = 200
+    evidence_max_file_bytes: int = 1_000_000
+    evidence_max_total_bytes: int = 5_000_000
+    evidence_max_content_files: int = 8
+    evidence_max_content_file_bytes: int = 64_000
+    evidence_max_content_total_bytes: int = 256_000
     model_config = SettingsConfigDict(env_prefix="AIEO_", env_file=".env", extra="ignore")
 
 

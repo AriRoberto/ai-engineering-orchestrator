@@ -66,6 +66,11 @@ class SecurityAgent(EngineeringAgent):
 
     def execute(self, request: TaskRequest) -> AgentResult:
         files = evidence_files(request)
+        collected = request.context.get("evidence", {}).get("files", [])
+        quarantined = sum(
+            1 for item in collected if item.get("content_status") == "quarantined"
+        )
+        redacted = sum(1 for item in collected if item.get("content_status") == "redacted")
         sensitive = [
             name for name in files if PurePosixPath(name).name.casefold() in self.sensitive_names
         ]
@@ -82,6 +87,11 @@ class SecurityAgent(EngineeringAgent):
                 else "Nenhum nome de arquivo sensível foi fornecido"
             ),
         ]
+        if collected:
+            findings.append(
+                f"Conteúdo controlado: {redacted} arquivo(s) com redaction e "
+                f"{quarantined} em quarentena"
+            )
         return AgentResult(
             agent=self.kind,
             summary="Diagnóstico de segurança concluído",
@@ -97,6 +107,7 @@ class DocumentationAgent(EngineeringAgent):
 
     def execute(self, request: TaskRequest) -> AgentResult:
         files = evidence_files(request)
+        collected = request.context.get("evidence", {}).get("files", [])
         docs = [name for name in files if PurePosixPath(name).suffix.casefold() == ".md"]
         required = {"README.md", "CHANGELOG.md", "SECURITY.md"}
         present = {PurePosixPath(name).name for name in docs}
@@ -107,6 +118,13 @@ class DocumentationAgent(EngineeringAgent):
             if not missing
             else f"Documentos essenciais não evidenciados: {', '.join(missing)}"
         )
+        if collected:
+            available = sum(
+                1
+                for item in collected
+                if item.get("content_status") in {"included", "redacted"}
+            )
+            findings.append(f"{available} conteúdo(s) textual(is) seguro(s) disponível(is)")
         return AgentResult(
             agent=self.kind,
             summary="Diagnóstico de documentação concluído",

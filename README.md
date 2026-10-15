@@ -35,7 +35,8 @@ com quatro novos agentes; recursos futuros continuam identificados explicitament
 | Memória persistente de execuções | Implementado com PostgreSQL |
 | MCP com ferramentas governadas | Implementado com servidor simulado e auditoria |
 | Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
-| Diagnósticos reais dos pilotos | Planejado — Fase 4 |
+| Evidências reais do piloto público | Implementado — metadados e conteúdo textual controlado |
+| Piloto privado autenticado | Planejado — Fase 4 |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
@@ -77,8 +78,8 @@ permissões. A decisão de orquestração está no [ADR-001](docs/architecture/A
 - **Linux/SRE:** produz diagnóstico baseado em evidências, sem comandos arbitrários no host.
 - **Database:** identifica schemas, SQL e migrações versionadas.
 - **QA:** correlaciona arquivos de teste e automação de CI.
-- **Security:** identifica controles e nomes de arquivos potencialmente sensíveis.
-- **Documentation:** inventaria Markdown e verifica documentos essenciais.
+- **Security:** identifica controles, nomes sensíveis, redactions e conteúdos em quarentena.
+- **Documentation:** inventaria Markdown, verifica documentos essenciais e contabiliza texto seguro.
 
 Todos implementam um contrato comum e retornam resultado estruturado. No modo demo, cada resultado
 é marcado com `simulated: true`.
@@ -147,6 +148,11 @@ Especialização da Fase 3:
 - [Agentes especializados](docs/pt-BR/fase-3-especializacao.md)
 - [Laboratório prático da Fase 3](docs/pt-BR/laboratorio-fase3.md)
 
+Piloto público da Fase 4:
+
+- [Coleta governada de evidências](docs/pt-BR/fase-4-piloto-publico.md)
+- [Laboratório prático da Fase 4](docs/pt-BR/laboratorio-fase4.md)
+
 ## Exemplo de uso
 
 ```bash
@@ -176,6 +182,7 @@ Endpoints atuais:
 - `GET /v1/mcp/tools?project_id=...`
 - `POST /v1/mcp/invocations`
 - `GET /v1/mcp/invocations?project_id=...`
+- `POST /v1/evidence/executions`
 
 ## Adicionar projetos e agentes
 
@@ -207,7 +214,7 @@ A CI repete lint, testes e build do container em pushes e pull requests para `ma
 
 ## Projetos pilotos
 
-- `AriRoberto/app-financas`: público, configurado para inspeção futura somente leitura.
+- `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.
 - `AriRoberto/app-ams`: privado; exige acesso autenticado e jamais será copiado para esta base pública.
 
 Nenhum piloto é modificado na Fase 1.
@@ -217,9 +224,10 @@ Nenhum piloto é modificado na Fase 1.
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
 2. **Inteligência e RAG:** fundação, RAG, memória persistente e governança MCP implementados; custos
    oficiais, embeddings de produção e transportes MCP reais permanecem em evolução.
-3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados;
-   coleta governada de evidências reais permanece pendente.
-4. **Pilotos:** diagnósticos autenticados e somente leitura; mudanças apenas após aprovação específica.
+3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados e
+   integrados aos estados das evidências coletadas.
+4. **Pilotos:** inventário e conteúdo textual controlado do piloto público implementados; análise
+   semântica com citações e acesso autenticado ao piloto privado permanecem pendentes.
 5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
 
 ## Contribuição, licença e contato

@@ -13,6 +13,11 @@
   aprovação para escrita e auditoria persistente de chamadas e bloqueios.
 - Primeiro incremento da Fase 3 com agentes de Banco de Dados, QA, Segurança e Documentação,
   roteamento determinístico, resultados estruturados e laboratório reproduzível dedicado.
+- Primeiro incremento da Fase 4 com coleta governada do inventário GitHub público, proveniência por
+  arquivo, limites contra abuso, integração à execução e bloqueio explícito do piloto privado.
+- Segundo incremento da Fase 4 com coleta textual opt-in, limites independentes, validação UTF-8,
+  SHA-256, redaction de possíveis segredos, quarentena de prompt injection e diagnóstico dos estados
+  pelos agentes de Segurança e Documentação.
 
 ## 0.1.0 - 2026-10-13
 

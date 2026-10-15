@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from apps.api import main as api_main
 from apps.api.main import app
 
 client = TestClient(app)
@@ -115,3 +116,56 @@ def test_phase3_specialists_are_available_and_executable() -> None:
         "security",
         "documentation",
     }
+
+
+def test_public_github_evidence_execution(monkeypatch) -> None:
+    class FakeTransport:
+        def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:
+            assert (owner, repository, ref) == ("AriRoberto", "app-financas", "main")
+            return {
+                "sha": "a" * 40,
+                "truncated": False,
+                "tree": [
+                    {"path": "README.md", "type": "blob", "size": 100, "sha": "b" * 40},
+                    {
+                        "path": "tests/test_financas.py",
+                        "type": "blob",
+                        "size": 200,
+                        "sha": "c" * 40,
+                    },
+                ],
+            }
+
+        def get_content(
+            self, owner: str, repository: str, path: str, ref: str, max_bytes: int
+        ) -> bytes:
+            contents = {
+                "README.md": b"Public documentation",
+                "tests/test_financas.py": b"def test_ok(): pass",
+            }
+            return contents[path]
+
+    monkeypatch.setattr(api_main.evidence_execution_service.collector, "transport", FakeTransport())
+    response = client.post(
+        "/v1/evidence/executions",
+        json={
+            "project_id": "app-financas",
+            "prompt": "Revise QA e documentação",
+            "demo": True,
+            "include_content": True,
+        },
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["status"] == "COMPLETED"
+    assert payload["request"]["context"]["evidence"]["provider"] == "github"
+    assert payload["request"]["context"]["evidence"]["read_only"] is True
+    assert payload["request"]["context"]["evidence"]["files"][0]["content_status"] == "included"
+
+
+def test_private_project_evidence_is_denied() -> None:
+    response = client.post(
+        "/v1/evidence/executions",
+        json={"project_id": "app-ams", "prompt": "Revise a documentação"},
+    )
+    assert response.status_code == 403

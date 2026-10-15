@@ -8,6 +8,13 @@ from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.postgres_repository import PostgresExecutionRepository
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import Execution, TaskRequest
+from ai_engineering.evidence.github import (
+    EvidenceCollectionError,
+    GitHubEvidenceCollector,
+    UrllibGitHubTreeTransport,
+)
+from ai_engineering.evidence.models import EvidenceExecutionRequest
+from ai_engineering.evidence.service import EvidenceExecutionService
 from ai_engineering.infrastructure.logging import configure_logging
 from ai_engineering.infrastructure.settings import get_settings
 from ai_engineering.integrations.llm.base import LLMRequest
@@ -39,6 +46,7 @@ from ai_engineering.knowledge.service import (
 )
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
 from ai_engineering.security.content import KnowledgeContentGuard
+from ai_engineering.security.secrets import SecretRedactor
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -81,6 +89,21 @@ orchestrator = AIEngineeringOrchestrator(
     llm=llm_provider if settings.llm_planning_enabled else None,
     max_llm_input_tokens=settings.max_llm_input_tokens,
     max_llm_output_tokens=settings.max_llm_output_tokens,
+)
+evidence_execution_service = EvidenceExecutionService(
+    settings.mcp_project_config_dir,
+    GitHubEvidenceCollector(
+        UrllibGitHubTreeTransport(settings.github_evidence_timeout_seconds),
+        max_files=settings.evidence_max_files,
+        max_file_bytes=settings.evidence_max_file_bytes,
+        max_total_bytes=settings.evidence_max_total_bytes,
+        max_content_files=settings.evidence_max_content_files,
+        max_content_file_bytes=settings.evidence_max_content_file_bytes,
+        max_content_total_bytes=settings.evidence_max_content_total_bytes,
+        content_guard=KnowledgeContentGuard(),
+        secret_redactor=SecretRedactor(),
+    ),
+    orchestrator,
 )
 
 
@@ -217,3 +240,18 @@ def invoke_mcp_tool(request: MCPInvocationRequest) -> MCPInvocation:
 @app.get("/v1/mcp/invocations", response_model=list[MCPInvocation], tags=["mcp"])
 def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
     return mcp_audit_repository.list(project_id)
+
+
+@app.post(
+    "/v1/evidence/executions",
+    response_model=Execution,
+    status_code=status.HTTP_201_CREATED,
+    tags=["evidence"],
+)
+def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Execution:
+    try:
+        return evidence_execution_service.execute(request)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except EvidenceCollectionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
