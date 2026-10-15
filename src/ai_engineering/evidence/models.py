@@ -30,3 +30,12 @@ class EvidenceCollection(BaseModel):
     provider: str = "github"
     read_only: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class EvidenceContextItem(BaseModel):
+    citation: str
+    path: str
+    source_url: str
+    content_sha256: str
+    content: str
+    truncated: bool = False

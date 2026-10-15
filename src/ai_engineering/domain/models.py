@@ -68,6 +68,7 @@ class Execution(BaseModel):
     plan: list[str] = Field(default_factory=list)
     results: list[AgentResult] = Field(default_factory=list)
     knowledge_sources: list[str] = Field(default_factory=list)
+    evidence_sources: list[str] = Field(default_factory=list)
     consolidated_result: str | None = None
     llm_usage: LLMUsageRecord | None = None
     events: list[ExecutionEvent] = Field(default_factory=list)

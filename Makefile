@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 eval-fase4
 
 install:
 	python -m pip install -e '.[dev]'
@@ -35,4 +35,8 @@ lab-fase3:
 
 lab-fase4:
 	./scripts/laboratorio-fase4.sh
+
+eval-fase4:
+	docker run --rm -v "$(CURDIR):/workspace" -w /workspace ai-engineering-orchestrator:latest \
+		sh -c "PYTHONPATH=src python scripts/avaliar-seguranca-evidencias.py"
 

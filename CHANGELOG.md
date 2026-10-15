@@ -18,6 +18,11 @@
 - Segundo incremento da Fase 4 com coleta textual opt-in, limites independentes, validação UTF-8,
   SHA-256, redaction de possíveis segredos, quarentena de prompt injection e diagnóstico dos estados
   pelos agentes de Segurança e Documentação.
+- Plano oficial de implementação com fases, critérios de conclusão, estado e ordem imediata.
+- Terceiro incremento da Fase 4 com orçamento de contexto, citações por arquivo, fontes de evidência
+  persistidas e separação explícita entre instruções confiáveis e dados externos.
+- Quarto incremento da Fase 4 com corpus adversarial versionado, métricas por categoria, limiar de
+  aprovação, normalização contra evasões simples e validação de citações, hashes, origem e orçamento.
 
 ## 0.1.0 - 2026-10-13
 
