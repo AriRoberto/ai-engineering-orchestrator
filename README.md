@@ -44,6 +44,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Autenticação, autorização e quotas da API | Implementado — quarto incremento da Fase 5 |
 | Interface React operacional | Implementado — quinto incremento da Fase 5 |
 | Implantação Kubernetes | Base Kustomize implementada; validação em cluster pendente |
+| SLOs e resposta a incidentes | Implementados localmente; calibração em homologação pendente |
 
 ## Arquitetura
 
@@ -260,8 +261,8 @@ O detalhamento oficial, critérios de conclusão e ordem dos incrementos estão 
    integrados aos estados das evidências coletadas.
 4. **Pilotos:** inventário, conteúdo controlado, contexto citado e corpus adversarial inicial do
    piloto público implementados; acesso autenticado ao piloto privado permanece pendente.
-5. **Produto:** correlação, métricas, interface React e base Kubernetes implementados; SLOs,
-   documentação consolidada e release seguem incrementalmente.
+5. **Produto:** correlação, métricas, interface React, Kubernetes, SLOs e runbooks implementados;
+   identidade federada, documentação consolidada e release seguem incrementalmente.
 
 ## Contribuição, licença e contato
 

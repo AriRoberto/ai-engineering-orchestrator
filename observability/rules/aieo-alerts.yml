@@ -6,9 +6,11 @@ groups:
         for: 1m
         labels:
           severity: critical
+          service: ai-engineering-orchestrator
         annotations:
           summary: API do orquestrador indisponível
           description: O target não responde ao Prometheus há pelo menos um minuto.
+          runbook_url: https://github.com/AriRoberto/ai-engineering-orchestrator/blob/main/docs/pt-BR/runbooks/disponibilidade.md
 
       - alert: AIEOHighErrorRate
         expr: |
@@ -19,9 +21,11 @@ groups:
         for: 5m
         labels:
           severity: warning
+          service: ai-engineering-orchestrator
         annotations:
           summary: Taxa elevada de erros HTTP
           description: Mais de 5% das requisições retornaram erro 5xx nos últimos cinco minutos.
+          runbook_url: https://github.com/AriRoberto/ai-engineering-orchestrator/blob/main/docs/pt-BR/runbooks/erros-http.md
 
       - alert: AIEOHighP95Latency
         expr: |
@@ -32,6 +36,8 @@ groups:
         for: 10m
         labels:
           severity: warning
+          service: ai-engineering-orchestrator
         annotations:
           summary: Latência p95 elevada
           description: A latência p95 permaneceu acima de dois segundos por dez minutos.
+          runbook_url: https://github.com/AriRoberto/ai-engineering-orchestrator/blob/main/docs/pt-BR/runbooks/latencia.md
