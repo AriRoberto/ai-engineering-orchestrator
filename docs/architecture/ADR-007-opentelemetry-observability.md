@@ -20,6 +20,10 @@ Métricas OpenTelemetry são expostas em formato Prometheus: volume e duração 
 normalizada, método e status; execuções usam origem e estado. Identificadores, projetos e conteúdos
 não são rótulos. Um overlay Compose oferece Prometheus local sem torná-lo dependência da API.
 
+O mesmo overlay provisiona um dashboard Grafana imutável e regras Prometheus versionadas. Os
+limiares iniciais cobrem disponibilidade, taxa de erros e latência p95. O laboratório usa acesso
+anônimo `Viewer`; essa configuração não é autorizada para ambientes externos.
+
 O exporter é opcional: desenvolvimento e testes não dependem de um coletor externo. A configuração
 fica em variáveis `AIEO_TELEMETRY_*` e `AIEO_OTEL_*`, sem credenciais na imagem ou no repositório.
 
@@ -27,5 +31,6 @@ fica em variáveis `AIEO_TELEMETRY_*` e `AIEO_OTEL_*`, sem credenciais na imagem
 
 - traces seguem um padrão aberto e podem ser enviados a coletores compatíveis;
 - suporte pode correlacionar uma resposta com logs e uma execução;
-- traces e métricas básicas ficam disponíveis; dashboards, alertas e SLOs continuam incrementais;
+- traces, métricas, dashboard e alertas básicos ficam disponíveis; notificações e SLOs continuam
+  incrementais;
 - atributos devem permanecer técnicos e não incluir prompts, conteúdos ou credenciais.

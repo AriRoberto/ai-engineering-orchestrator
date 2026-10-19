@@ -39,9 +39,28 @@ mantém baixa cardinalidade e reduz exposição de dados operacionais.
 Em 19/10/2026, o laboratório confirmou a geração das métricas pela API, a descoberta do target pelo
 Prometheus e o resultado `up=1` consultado pela API do coletor.
 
+## Incremento 3 — Dashboard e alertas
+
+Estado: concluído.
+
+Entregas:
+
+- dashboard Grafana provisionado como código, sem configuração manual;
+- painéis para requisições, erros 5xx, latência p95, execuções e disponibilidade;
+- alerta crítico quando a API fica indisponível por um minuto;
+- alertas de aviso para taxa de erros acima de 5% e p95 acima de dois segundos;
+- validação das regras com `promtool` e consulta das APIs do Prometheus e Grafana no laboratório;
+- Grafana local somente leitura e com acesso anônimo limitado a `Viewer`.
+
+O acesso anônimo existe exclusivamente no overlay local de laboratório. Uma implantação externa
+deve usar autenticação, TLS, persistência e canal de notificação gerenciado.
+
+Em 19/10/2026, o laboratório validou as três regras com `promtool`, confirmou seu carregamento pela
+API do Prometheus e localizou o dashboard `aieo-overview` provisionado pela API do Grafana.
+
 ## Próximos incrementos
 
-1. dashboards, alertas e métricas de dependências;
+1. métricas de dependências e canal de notificação;
 2. autenticação, autorização e quotas da API;
 3. interface para histórico, fontes e aprovações;
 4. Kubernetes, SLOs e runbooks.
