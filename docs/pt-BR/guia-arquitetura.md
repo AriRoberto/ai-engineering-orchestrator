@@ -168,6 +168,16 @@ allowlist antes de acessar repositórios ou integrações.
 Health, métricas e OpenAPI permanecem públicos. A quota inicial reside em memória por processo;
 ambientes com múltiplas réplicas precisam de controle distribuído antes de alegar limites globais.
 
+## Interface operacional
+
+O build multi-stage compila a aplicação React com Vite e copia somente os artefatos estáticos para
+a imagem Python. A FastAPI publica `/ui/`; o frontend consulta os contratos `/v1` para histórico,
+fontes, auditoria e aprovações. Regras de autorização não são duplicadas no navegador.
+
+A aprovação MCP usa o ID do registro `WAITING_APPROVAL`. O gateway recupera a solicitação original,
+recusa IDs de outro projeto ou já processados e grava um novo registro com `approval_of`, aprovador
+e resultado. Assim, a interface não pode alterar servidor, ferramenta ou argumentos na aprovação.
+
 ## Governança e segurança
 
 - leitura é o padrão;
@@ -212,6 +222,7 @@ volume local existente sem exigir sua remoção.
 - [ADR-006 — acesso privado escopado](../architecture/ADR-006-scoped-private-repository-access.md)
 - [ADR-007 — observabilidade OpenTelemetry](../architecture/ADR-007-opentelemetry-observability.md)
 - [ADR-008 — controle de acesso da API](../architecture/ADR-008-api-access-control.md)
+- [ADR-009 — interface operacional](../architecture/ADR-009-operations-ui.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)

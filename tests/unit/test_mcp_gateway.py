@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from ai_engineering.integrations.mcp.client import SimulatedProjectMCPClient
 from ai_engineering.integrations.mcp.models import MCPInvocationRequest, MCPInvocationStatus
 from ai_engineering.integrations.mcp.policy import MCPPolicyStore
@@ -78,6 +80,26 @@ def test_write_waits_for_approval_and_read_only_project_denies_it(tmp_path: Path
     read_only_gateway = make_gateway(tmp_path, mode="read-only")
     approved = request.model_copy(update={"approved": True, "approved_by": "human@example.test"})
     assert read_only_gateway.invoke(approved).status == MCPInvocationStatus.DENIED
+
+
+def test_pending_write_can_be_approved_once(tmp_path: Path) -> None:
+    gateway = make_gateway(tmp_path)
+    pending = gateway.invoke(
+        MCPInvocationRequest(
+            project_id="project-one",
+            server="project-catalog",
+            tool="publish_change",
+            arguments={"branch": "agents/devops/feat-demo-002"},
+        )
+    )
+
+    completed = gateway.approve(pending.id, "project-one", "reviewer@example.test")
+
+    assert completed.status == MCPInvocationStatus.COMPLETED
+    assert completed.approval_of == pending.id
+    assert completed.approved_by == "reviewer@example.test"
+    with pytest.raises(ValueError, match="já processada"):
+        gateway.approve(pending.id, "project-one", "reviewer@example.test")
 
 
 def test_non_allowlisted_tool_is_denied_and_audited(tmp_path: Path) -> None:

@@ -110,6 +110,18 @@ def test_governed_mcp_endpoints() -> None:
         },
     )
     assert pending.json()["status"] == "WAITING_APPROVAL"
+    approved = client.post(
+        f"/v1/mcp/invocations/{pending.json()['id']}/approve",
+        json={"project_id": "laboratorio-fase2", "approved_by": "reviewer@example.test"},
+    )
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "COMPLETED"
+    assert approved.json()["approval_of"] == pending.json()["id"]
+    replay = client.post(
+        f"/v1/mcp/invocations/{pending.json()['id']}/approve",
+        json={"project_id": "laboratorio-fase2", "approved_by": "reviewer@example.test"},
+    )
+    assert replay.status_code == 409
 
 
 def test_phase3_specialists_are_available_and_executable() -> None:

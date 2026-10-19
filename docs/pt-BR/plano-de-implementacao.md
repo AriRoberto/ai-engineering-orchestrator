@@ -80,7 +80,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    regras de disponibilidade, erros e latência, com validação por laboratório;
 4. **API com acesso governado — implementado localmente.** API keys por arquivo secreto, papéis,
    escopo de projetos e quota por identidade;
-5. interface React para solicitações, aprovações, fontes e histórico;
+5. **Interface operacional React — implementada localmente.** Histórico, fontes, auditorias e
+   aprovações MCP integradas à API governada;
 6. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
 7. avaliação contínua, SLOs, runbooks e resposta a incidentes;
 8. compilação da documentação oficial e release versionado.
@@ -90,7 +91,7 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. validar controle de acesso e iniciar a interface operacional.
+4. validar a interface operacional e iniciar os manifests Kubernetes.
 
 ## Rastreabilidade
 
