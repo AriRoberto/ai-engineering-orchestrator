@@ -34,6 +34,11 @@ antes da operação. Chaves apresentadas não entram em respostas, logs, traces 
 A interface operacional mantém a API key somente em `sessionStorage` e não carrega scripts de CDN.
 Isso limita persistência, mas não elimina risco de XSS; uso público requer identidade federada,
 sessão segura, CSP revisada e processo contínuo de atualização das dependências web.
+
+A base Kubernetes não contém objetos `Secret` nem publica Ingress. Credenciais devem ser criadas
+pelo mecanismo seguro da plataforma; imagens devem ser fixadas por digest nos overlays. O container
+executa sem privilégios, sem token automático do cluster, com filesystem somente leitura e
+capacidades removidas. Ajuste a NetworkPolicy aos destinos reais antes da implantação.
 Árvores truncadas, caminhos inseguros, SHAs inválidos e arquivos acima dos limites são recusados ou
 ignorados. Conteúdo só é baixado quando `include_content=true`, de um subconjunto textual limitado
 e priorizado. O texto precisa ser UTF-8, recebe hash SHA-256 e passa por detecção conservadora de

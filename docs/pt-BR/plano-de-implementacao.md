@@ -82,7 +82,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    escopo de projetos e quota por identidade;
 5. **Interface operacional React — implementada localmente.** Histórico, fontes, auditorias e
    aprovações MCP integradas à API governada;
-6. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
+6. **Implantação Kubernetes — implementada localmente.** Base Kustomize, probes, recursos,
+   políticas, migração e referências externas de segredos; validação em cluster pendente;
 7. avaliação contínua, SLOs, runbooks e resposta a incidentes;
 8. compilação da documentação oficial e release versionado.
 
@@ -91,7 +92,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. validar a interface operacional e iniciar os manifests Kubernetes.
+4. provisionar homologação e validar imagem, migração, rede, probes e rollback no cluster;
+5. iniciar SLOs, runbooks e resposta a incidentes.
 
 ## Rastreabilidade
 
