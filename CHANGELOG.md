@@ -4,6 +4,8 @@
 
 - Primeiro incremento da Fase 5 com instrumentação OpenTelemetry da API, exportação OTLP/HTTP
   opcional, IDs de requisição validados e correlação entre resposta, trace, logs e execução.
+- Segundo incremento da Fase 5 com métricas HTTP e de execuções, endpoint Prometheus, coletor local
+  em overlay Compose e laboratório reproduzível com rótulos de baixa cardinalidade.
 
 - Fundação incremental da Fase 2: PostgreSQL/pgvector, ingestão documental, busca híbrida isolada
   por projeto, feedback persistente, provedor LLM simulado e adaptador opcional para OpenAI Agents SDK.

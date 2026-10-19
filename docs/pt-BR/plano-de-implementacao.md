@@ -74,19 +74,21 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 
 1. **OpenTelemetry e correlação — implementado localmente.** Traces HTTP, exportação OTLP opcional,
    IDs de requisição validados e correlação com execução;
-2. métricas, coletor local, dashboards e alertas;
-3. API operacional com autenticação, autorização e quotas;
-4. interface React para solicitações, aprovações, fontes e histórico;
-5. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
-6. avaliação contínua, SLOs, runbooks e resposta a incidentes;
-7. compilação da documentação oficial e release versionado.
+2. **Métricas e coletor local — implementado.** Métricas HTTP e de execuções, endpoint Prometheus,
+   overlay Compose e laboratório reproduzível;
+3. dashboards e alertas;
+4. API operacional com autenticação, autorização e quotas;
+5. interface React para solicitações, aprovações, fontes e histórico;
+6. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
+7. avaliação contínua, SLOs, runbooks e resposta a incidentes;
+8. compilação da documentação oficial e release versionado.
 
 ## Ordem imediata
 
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. validar traces e iniciar métricas como próximo incremento da Fase 5.
+4. validar o laboratório de métricas e iniciar dashboards e alertas.
 
 ## Rastreabilidade
 

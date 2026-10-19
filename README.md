@@ -39,6 +39,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
 | Piloto privado autenticado | Implementação local — validação real pendente de credencial somente leitura |
 | OpenTelemetry e correlação HTTP | Implementado — primeiro incremento da Fase 5 |
+| Métricas e coletor Prometheus | Implementado — segundo incremento da Fase 5 |
 | React UI e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
@@ -178,6 +179,7 @@ curl -X POST http://localhost:8000/v1/executions \
 Endpoints atuais:
 
 - `GET /health`
+- `GET /metrics`
 - `GET /v1/agents`
 - `POST /v1/executions`
 - `GET /v1/executions?project_id=...`

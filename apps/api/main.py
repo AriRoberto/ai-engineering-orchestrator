@@ -1,8 +1,9 @@
 from uuid import UUID
 
 import structlog
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Response, status
 from opentelemetry import trace
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
 from ai_engineering.agents.specialists import default_agents
@@ -155,9 +156,10 @@ app = FastAPI(
     version="0.1.0",
     description="Fundação determinística e segura para fluxos multiagentes de engenharia.",
 )
-configure_telemetry(
+telemetry = configure_telemetry(
     app,
     enabled=settings.telemetry_enabled,
+    metrics_enabled=settings.metrics_enabled,
     service_name=settings.otel_service_name,
     environment=settings.environment,
     otlp_endpoint=settings.otel_exporter_otlp_endpoint,
@@ -167,6 +169,11 @@ configure_telemetry(
 @app.get("/health", tags=["system"])
 def health() -> dict[str, str]:
     return {"status": "healthy", "service": "ai-engineering-orchestrator"}
+
+
+@app.get("/metrics", tags=["system"], include_in_schema=False)
+def prometheus_metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/v1/agents", tags=["agents"])
@@ -189,6 +196,7 @@ def create_execution(request: TaskRequest) -> Execution:
     span.set_attribute("execution.id", str(execution.id))
     span.set_attribute("execution.project_id", execution.request.project_id)
     span.set_attribute("execution.status", execution.status.value)
+    telemetry.record_execution(status=execution.status.value, source="direct")
     logger.info(
         "execution_processed",
         execution_id=str(execution.id),
@@ -299,7 +307,9 @@ def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
 )
 def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Execution:
     try:
-        return evidence_execution_service.execute(request)
+        execution = evidence_execution_service.execute(request)
+        telemetry.record_execution(status=execution.status.value, source="evidence")
+        return execution
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except EvidenceCollectionError as exc:

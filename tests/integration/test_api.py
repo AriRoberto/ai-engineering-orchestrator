@@ -26,6 +26,21 @@ def test_request_id_is_propagated_only_when_valid() -> None:
     assert UUID(replaced.headers["X-Request-ID"])
 
 
+def test_prometheus_metrics_include_http_and_execution_counters() -> None:
+    client.post(
+        "/v1/executions",
+        json={"project_id": "metrics-test", "prompt": "Analise o código", "demo": True},
+    )
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "aieo_http_server_requests_total" in response.text
+    assert "aieo_http_server_duration_seconds" in response.text
+    assert "aieo_executions_total" in response.text
+    assert 'execution_source="direct"' in response.text
+
+
 def test_demo_execution() -> None:
     response = client.post(
         "/v1/executions",

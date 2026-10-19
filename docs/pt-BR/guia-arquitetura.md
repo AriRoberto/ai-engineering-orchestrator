@@ -148,6 +148,10 @@ recebe um `X-Request-ID` UUID; identificadores ausentes ou inválidos são subst
 ativa, `X-Trace-ID` permite localizar o trace correspondente. Logs de execução incluem os IDs de
 requisição, trace e execução, sem adicionar prompt, conteúdo de evidência ou credenciais aos spans.
 
+Métricas HTTP e de execuções são expostas em `/metrics`. Método, rota normalizada, status, origem e
+estado são os únicos rótulos; dados por projeto ou execução não entram nas séries. O overlay
+`compose.observability.yaml` adiciona Prometheus com armazenamento efêmero para laboratório.
+
 ## Governança e segurança
 
 - leitura é o padrão;

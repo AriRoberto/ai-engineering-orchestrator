@@ -1,0 +1,21 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.7.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      api:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /prometheus:size=128m,mode=0755,uid=65534,gid=65534
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
