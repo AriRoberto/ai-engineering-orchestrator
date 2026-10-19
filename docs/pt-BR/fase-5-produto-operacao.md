@@ -123,13 +123,33 @@ Em 19/10/2026, o laboratório renderizou oito recursos, confirmou os controles d
 as referências externas de segredos, as probes, os limites e o Job de migração. A implantação real
 permanece dependente de cluster, registry, PostgreSQL, TLS e overlays da plataforma.
 
+## Incremento 7 — SLOs e resposta a incidentes
+
+Estado: concluído localmente; calibração com tráfego real pendente.
+
+Entregas:
+
+- SLO de 99,5% de disponibilidade e 95% das respostas em até dois segundos;
+- SLIs de cinco minutos a 30 dias como recording rules Prometheus;
+- alertas multi-janela para consumo rápido e sustentado do orçamento de erro;
+- buckets explícitos de latência adequados ao limiar de dois segundos;
+- painéis de disponibilidade e orçamento restante no Grafana;
+- runbooks de disponibilidade, erros 5xx e latência;
+- processo comum de severidade, comunicação, evidências, mitigação e encerramento;
+- URLs de runbook incorporadas em todos os alertas.
+
+Em 19/10/2026, o `promtool` validou onze regras, o dashboard passou pela validação JSON e o
+laboratório foi ampliado para verificar o carregamento dos SLIs e alertas de burn rate. Os objetivos
+são internos e deverão ser calibrados após histórico de homologação.
+
 ## Próximos incrementos
 
-1. métricas de dependências e canal de notificação;
-2. identidade federada, quotas distribuídas, SLOs e runbooks;
-3. validar os manifests em um cluster de homologação e fixar imagens por digest.
+1. métricas de dependências e canal gerenciado de notificação;
+2. identidade federada e quotas distribuídas;
+3. validar Kubernetes e SLOs em homologação, com imagem fixada por digest.
 
 Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),
 [ADR-008](../architecture/ADR-008-api-access-control.md) e
 [ADR-009](../architecture/ADR-009-operations-ui.md) e
-[ADR-010](../architecture/ADR-010-kubernetes-deployment.md).
+[ADR-010](../architecture/ADR-010-kubernetes-deployment.md) e
+[ADR-011](../architecture/ADR-011-slo-incident-response.md).

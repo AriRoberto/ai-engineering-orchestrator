@@ -198,6 +198,13 @@ recursos, PodDisruptionBudget e NetworkPolicy. `/health` representa a vida do pr
 consulta o PostgreSQL antes de aceitar tráfego. Um Job separado aplica as migrações idempotentes da
 imagem. Segredos, Ingress, TLS e particularidades do provedor pertencem aos overlays do ambiente.
 
+## SLOs e resposta a incidentes
+
+Recording rules derivam disponibilidade e latência das métricas HTTP em janelas de até 30 dias.
+Alertas de burn rate combinam janelas curta e longa para reduzir ruído, e todos apontam para
+runbooks versionados. O objetivo inicial é 99,5% sem 5xx e 95% das respostas em até dois segundos;
+os valores são internos até calibração com tráfego de homologação.
+
 ## Configuração e migrações
 
 | Componente | Fonte |
@@ -233,6 +240,9 @@ volume local existente sem exigir sua remoção.
 - [ADR-008 — controle de acesso da API](../architecture/ADR-008-api-access-control.md)
 - [ADR-009 — interface operacional](../architecture/ADR-009-operations-ui.md)
 - [ADR-010 — implantação Kubernetes](../architecture/ADR-010-kubernetes-deployment.md)
+- [ADR-011 — SLOs e resposta a incidentes](../architecture/ADR-011-slo-incident-response.md)
+- [Objetivos de nível de serviço](slo.md)
+- [Runbooks operacionais](runbooks/README.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
