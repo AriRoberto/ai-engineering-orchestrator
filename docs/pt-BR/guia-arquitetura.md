@@ -157,6 +157,17 @@ indisponibilidade, taxa de erro 5xx e latência p95. Dashboard, datasource e ale
 versionados. O acesso anônimo `Viewer` é restrito ao laboratório local e não representa configuração
 de produção.
 
+## Controle de acesso da API
+
+Quando habilitado, `APIAccessController` protege todos os endpoints `/v1` com API keys. O arquivo
+secreto contém somente hashes SHA-256 e metadados não secretos: `key_id`, papel, projetos e quota.
+O middleware autentica em tempo constante, bloqueia mutações para `viewer`, aplica quota por minuto
+e propaga a identidade apenas em contexto interno. Cada operação com `project_id` confirma a
+allowlist antes de acessar repositórios ou integrações.
+
+Health, métricas e OpenAPI permanecem públicos. A quota inicial reside em memória por processo;
+ambientes com múltiplas réplicas precisam de controle distribuído antes de alegar limites globais.
+
 ## Governança e segurança
 
 - leitura é o padrão;
@@ -200,6 +211,7 @@ volume local existente sem exigir sua remoção.
 - [ADR-005 — contexto citado](../architecture/ADR-005-cited-evidence-context.md)
 - [ADR-006 — acesso privado escopado](../architecture/ADR-006-scoped-private-repository-access.md)
 - [ADR-007 — observabilidade OpenTelemetry](../architecture/ADR-007-opentelemetry-observability.md)
+- [ADR-008 — controle de acesso da API](../architecture/ADR-008-api-access-control.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)

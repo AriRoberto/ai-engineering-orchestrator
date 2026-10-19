@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     telemetry_enabled: bool = True
     metrics_enabled: bool = True
+    api_auth_enabled: bool = False
+    api_keys_file: str | None = None
     otel_service_name: str = "ai-engineering-orchestrator"
     otel_exporter_otlp_endpoint: str | None = None
     demo_mode: bool = True

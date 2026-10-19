@@ -41,6 +41,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | OpenTelemetry e correlação HTTP | Implementado — primeiro incremento da Fase 5 |
 | Métricas e coletor Prometheus | Implementado — segundo incremento da Fase 5 |
 | Dashboard Grafana e alertas Prometheus | Implementado — terceiro incremento da Fase 5 |
+| Autenticação, autorização e quotas da API | Implementado — quarto incremento da Fase 5 |
 | React UI e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
@@ -168,6 +169,12 @@ O laboratório de observabilidade inicia Prometheus e Grafana:
 
 ```bash
 make lab-fase5-observabilidade
+```
+
+O laboratório de acesso valida autenticação, papéis, projetos e quotas com segredos efêmeros:
+
+```bash
+make lab-fase5-acesso
 ```
 
 ## Exemplo de uso
