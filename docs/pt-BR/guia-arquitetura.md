@@ -190,6 +190,14 @@ e resultado. Assim, a interface não pode alterar servidor, ferramenta ou argume
 - credenciais GitHub privadas são escopadas por repositório e preferencialmente montadas como secret;
 - containers executam sem root, sem capabilities e com filesystem somente leitura.
 
+## Implantação Kubernetes
+
+A base em `k8s/base` é renderizada por Kustomize e mantém a aplicação interna ao cluster. O
+Deployment usa duas réplicas, ServiceAccount sem token, Pod Security `restricted`, probes distintas,
+recursos, PodDisruptionBudget e NetworkPolicy. `/health` representa a vida do processo; `/ready`
+consulta o PostgreSQL antes de aceitar tráfego. Um Job separado aplica as migrações idempotentes da
+imagem. Segredos, Ingress, TLS e particularidades do provedor pertencem aos overlays do ambiente.
+
 ## Configuração e migrações
 
 | Componente | Fonte |
@@ -202,6 +210,7 @@ e resultado. Assim, a interface não pode alterar servidor, ferramenta ou argume
 | Execuções | `migrations/002_phase2_executions.sql` |
 | Auditoria MCP | `migrations/003_phase2_mcp_audit.sql` |
 | Auditoria de evidências | `migrations/004_phase4_evidence_audit.sql` |
+| Implantação e migração no cluster | `k8s/base` + Job `orchestrator-migrations` |
 
 As tabelas incrementais também são criadas idempotentemente pelos repositórios para atualizar um
 volume local existente sem exigir sua remoção.
@@ -223,6 +232,7 @@ volume local existente sem exigir sua remoção.
 - [ADR-007 — observabilidade OpenTelemetry](../architecture/ADR-007-opentelemetry-observability.md)
 - [ADR-008 — controle de acesso da API](../architecture/ADR-008-api-access-control.md)
 - [ADR-009 — interface operacional](../architecture/ADR-009-operations-ui.md)
+- [ADR-010 — implantação Kubernetes](../architecture/ADR-010-kubernetes-deployment.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)

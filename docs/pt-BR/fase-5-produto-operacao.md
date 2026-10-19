@@ -104,11 +104,32 @@ aprovou uma invocação MCP pendente e validou o vínculo `approval_of`, o estad
 a rejeição de uma segunda aprovação. A suíte completa registrou 74 testes aprovados e 91% de
 cobertura.
 
+## Incremento 6 — Implantação Kubernetes
+
+Estado: concluído localmente; implantação em cluster pendente.
+
+Entregas:
+
+- base Kustomize independente de provedor;
+- Deployment com duas réplicas, recursos, três probes e filesystem somente leitura;
+- endpoint `/ready` que verifica a conexão com o PostgreSQL;
+- ServiceAccount sem token automático e namespace com Pod Security `restricted`;
+- Service interno, PodDisruptionBudget e NetworkPolicy;
+- segredos referenciados, nunca materializados nos manifests;
+- Job idempotente de migração usando a mesma imagem da aplicação;
+- laboratório estático reproduzível em `make lab-fase5-kubernetes`.
+
+Em 19/10/2026, o laboratório renderizou oito recursos, confirmou os controles de menor privilégio,
+as referências externas de segredos, as probes, os limites e o Job de migração. A implantação real
+permanece dependente de cluster, registry, PostgreSQL, TLS e overlays da plataforma.
+
 ## Próximos incrementos
 
 1. métricas de dependências e canal de notificação;
-2. Kubernetes, identidade federada, quotas distribuídas, SLOs e runbooks.
+2. identidade federada, quotas distribuídas, SLOs e runbooks;
+3. validar os manifests em um cluster de homologação e fixar imagens por digest.
 
 Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),
 [ADR-008](../architecture/ADR-008-api-access-control.md) e
-[ADR-009](../architecture/ADR-009-operations-ui.md).
+[ADR-009](../architecture/ADR-009-operations-ui.md) e
+[ADR-010](../architecture/ADR-010-kubernetes-deployment.md).
