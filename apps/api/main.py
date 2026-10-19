@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.postgres_repository import PostgresExecutionRepository
@@ -185,6 +187,19 @@ def authorize_project(project_id: str) -> None:
 @app.get("/health", tags=["system"])
 def health() -> dict[str, str]:
     return {"status": "healthy", "service": "ai-engineering-orchestrator"}
+
+
+@app.get("/ready", tags=["system"])
+def readiness() -> dict[str, str]:
+    engine = getattr(repository, "engine", None)
+    if engine is not None:
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+        except SQLAlchemyError as exc:
+            logger.warning("readiness_dependency_unavailable", dependency="database")
+            raise HTTPException(status_code=503, detail="Banco de dados indisponível") from exc
+    return {"status": "ready", "service": "ai-engineering-orchestrator"}
 
 
 @app.get("/metrics", tags=["system"], include_in_schema=False)

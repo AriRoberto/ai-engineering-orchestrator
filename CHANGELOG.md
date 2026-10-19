@@ -12,6 +12,8 @@
   projetos, quotas por identidade e laboratório sem persistência de credenciais.
 - Quinto incremento da Fase 5 com interface React para histórico, fontes, auditorias e aprovações
   MCP vinculadas, compilada e servida pela mesma imagem da API.
+- Sexto incremento da Fase 5 com base Kustomize segura, prontidão dependente do PostgreSQL, Job de
+  migração e laboratório reproduzível.
 
 - Fundação incremental da Fase 2: PostgreSQL/pgvector, ingestão documental, busca híbrida isolada
   por projeto, feedback persistente, provedor LLM simulado e adaptador opcional para OpenAI Agents SDK.

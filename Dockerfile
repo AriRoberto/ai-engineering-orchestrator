@@ -17,6 +17,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY apps ./apps
 COPY configs ./configs
+COPY migrations ./migrations
 COPY --from=web-build /web/dist ./web-dist
 RUN pip install --upgrade pip && pip install .
 USER app
