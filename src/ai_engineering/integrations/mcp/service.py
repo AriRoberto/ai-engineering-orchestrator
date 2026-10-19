@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from jsonschema import ValidationError, validate
 
 from ai_engineering.integrations.mcp.client import MCPClient
@@ -28,7 +30,12 @@ class MCPGateway:
             if tool.qualified_name in policy.allowed_tools
         ]
 
-    def invoke(self, request: MCPInvocationRequest) -> MCPInvocation:
+    def invoke(
+        self,
+        request: MCPInvocationRequest,
+        *,
+        approval_of: UUID | None = None,
+    ) -> MCPInvocation:
         policy = self.policies.get(request.project_id)
         client = self.clients.get(request.server)
         tool = next(
@@ -38,19 +45,23 @@ class MCPGateway:
         qualified_name = f"{request.server}:{request.tool}"
         if not policy or not tool or qualified_name not in policy.allowed_tools:
             return self._record(
-                request, tool, MCPInvocationStatus.DENIED, "Ferramenta não autorizada"
+                request, tool, MCPInvocationStatus.DENIED, "Ferramenta não autorizada",
+                approval_of=approval_of,
             )
         if tool.risk == MCPToolRisk.DESTRUCTIVE:
             return self._record(
-                request, tool, MCPInvocationStatus.DENIED, "Ação destrutiva bloqueada"
+                request, tool, MCPInvocationStatus.DENIED, "Ação destrutiva bloqueada",
+                approval_of=approval_of,
             )
         if tool.risk == MCPToolRisk.WRITE and policy.mode == "read-only":
             return self._record(
-                request, tool, MCPInvocationStatus.DENIED, "Projeto somente leitura"
+                request, tool, MCPInvocationStatus.DENIED, "Projeto somente leitura",
+                approval_of=approval_of,
             )
         if tool.risk == MCPToolRisk.WRITE and not request.approved:
             return self._record(
-                request, tool, MCPInvocationStatus.WAITING_APPROVAL, "Aprovação humana necessária"
+                request, tool, MCPInvocationStatus.WAITING_APPROVAL,
+                "Aprovação humana necessária", approval_of=approval_of,
             )
         try:
             validate(request.arguments, tool.input_schema)
@@ -59,12 +70,34 @@ class MCPGateway:
             )
             validate(result, tool.output_schema)
         except (ValidationError, KeyError):
-            return self._record(request, tool, MCPInvocationStatus.FAILED, "Schema MCP inválido")
+            return self._record(
+                request, tool, MCPInvocationStatus.FAILED, "Schema MCP inválido",
+                approval_of=approval_of,
+            )
         return self._record(
-            request, tool, MCPInvocationStatus.COMPLETED, "Ferramenta executada", result
+            request, tool, MCPInvocationStatus.COMPLETED, "Ferramenta executada", result,
+            approval_of=approval_of,
         )
 
-    def _record(self, request, tool, status, reason, result=None) -> MCPInvocation:
+    def approve(self, invocation_id: UUID, project_id: str, approved_by: str) -> MCPInvocation:
+        pending = self.audit.get(invocation_id, project_id)
+        if not pending or pending.status != MCPInvocationStatus.WAITING_APPROVAL:
+            raise ValueError("Aprovação pendente não encontrada")
+        if any(item.approval_of == invocation_id for item in self.audit.list(project_id)):
+            raise ValueError("Aprovação já processada")
+        request = MCPInvocationRequest(
+            project_id=project_id,
+            server=pending.server,
+            tool=pending.tool,
+            arguments=pending.arguments,
+            approved=True,
+            approved_by=approved_by,
+        )
+        return self.invoke(request, approval_of=invocation_id)
+
+    def _record(
+        self, request, tool, status, reason, result=None, approval_of=None
+    ) -> MCPInvocation:
         invocation = MCPInvocation(
             project_id=request.project_id,
             server=request.server,
@@ -75,6 +108,7 @@ class MCPGateway:
             result=result,
             reason=reason,
             approved_by=request.approved_by,
+            approval_of=approval_of,
         )
         self.audit.add(invocation)
         return invocation

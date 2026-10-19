@@ -25,6 +25,17 @@ class MCPAuditRepository:
                 if item.project_id == project_id
             ]
 
+    def get(self, invocation_id: UUID, project_id: str) -> MCPInvocation | None:
+        with self._lock:
+            return next(
+                (
+                    item.model_copy(deep=True)
+                    for item in self._items
+                    if item.id == invocation_id and item.project_id == project_id
+                ),
+                None,
+            )
+
 
 class MCPAuditBase(DeclarativeBase):
     pass
@@ -64,3 +75,13 @@ class PostgresMCPAuditRepository:
                 .order_by(MCPInvocationRow.created_at.desc())
             ).all()
             return [MCPInvocation.model_validate(row.payload) for row in rows]
+
+    def get(self, invocation_id: UUID, project_id: str) -> MCPInvocation | None:
+        with Session(self.engine) as session:
+            row = session.scalar(
+                select(MCPInvocationRow).where(
+                    MCPInvocationRow.id == invocation_id,
+                    MCPInvocationRow.project_id == project_id,
+                )
+            )
+            return MCPInvocation.model_validate(row.payload) if row else None

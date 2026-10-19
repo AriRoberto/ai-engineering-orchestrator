@@ -47,6 +47,11 @@ class MCPInvocationRequest(BaseModel):
         return self
 
 
+class MCPApprovalRequest(BaseModel):
+    project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    approved_by: str = Field(min_length=2, max_length=200)
+
+
 class MCPInvocation(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     project_id: str
@@ -58,4 +63,5 @@ class MCPInvocation(BaseModel):
     result: dict[str, Any] | None = None
     reason: str
     approved_by: str | None = None
+    approval_of: UUID | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

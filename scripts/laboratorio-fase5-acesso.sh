@@ -26,10 +26,10 @@ printf '%s\n' "{\"keys\":[
 ]}" >"${keys_file}"
 export AIEO_API_KEYS_FILE_HOST="${keys_file}"
 
-echo "1/5 Iniciando API com autenticação obrigatória..."
+echo "1/6 Iniciando API com autenticação obrigatória e interface..."
 docker compose -f compose.yaml -f compose.access.yaml up --build -d
 
-echo "2/5 Confirmando endpoints públicos e autenticação..."
+echo "2/6 Confirmando endpoints públicos e autenticação..."
 for _ in $(seq 1 30); do
   if curl --fail --silent "${base_url}/health" >/dev/null; then
     break
@@ -39,7 +39,7 @@ done
 curl --fail --silent "${base_url}/health" >/dev/null
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' "${base_url}/v1/agents")" = "401"
 
-echo "3/5 Confirmando autorização por papel e projeto..."
+echo "3/6 Confirmando autorização por papel e projeto..."
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   -X POST -H "X-API-Key: ${viewer_key}" -H 'Content-Type: application/json' \
   -d '{"project_id":"laboratorio-fase2","prompt":"Teste de papel","demo":true}' \
@@ -50,12 +50,25 @@ test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
 curl --fail --silent -H "X-API-Key: ${operator_key}" \
   "${base_url}/v1/executions?project_id=laboratorio-fase2" >/dev/null
 
-echo "4/5 Confirmando quota por identidade..."
+echo "4/6 Confirmando quota por identidade..."
 curl --fail --silent -H "X-API-Key: ${quota_key}" "${base_url}/v1/agents" >/dev/null
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   -H "X-API-Key: ${quota_key}" "${base_url}/v1/agents")" = "429"
 
-echo "5/5 Confirmando ausência de segredos nas respostas..."
+echo "5/6 Confirmando fluxo de aprovação e interface operacional..."
+pending="$(curl --fail --silent -H "X-API-Key: ${operator_key}" \
+  -H 'Content-Type: application/json' \
+  -d '{"project_id":"laboratorio-fase2","server":"project-catalog","tool":"publish_change","arguments":{"branch":"agents/devops/feat-ui-lab"}}' \
+  "${base_url}/v1/mcp/invocations")"
+pending_id="$(printf '%s' "${pending}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+approved="$(curl --fail --silent -H "X-API-Key: ${operator_key}" \
+  -H 'Content-Type: application/json' \
+  -d '{"project_id":"laboratorio-fase2","approved_by":"laboratorio@example.test"}' \
+  "${base_url}/v1/mcp/invocations/${pending_id}/approve")"
+printf '%s' "${approved}" | grep -q '"status":"COMPLETED"'
+curl --fail --silent --location "${base_url}/ui/" | grep -q 'AI Engineering Orchestrator'
+
+echo "6/6 Confirmando ausência de segredos nas respostas..."
 response="$(curl --silent -H "X-API-Key: ${operator_key}" "${base_url}/v1/agents")"
 if printf '%s' "${response}" | grep -qE "${operator_key}|${viewer_key}|${quota_key}"; then
   echo "Uma credencial foi exposta na resposta." >&2

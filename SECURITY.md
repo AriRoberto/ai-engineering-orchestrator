@@ -30,6 +30,10 @@ cabeçalho de autenticação.
 Quando o controle de acesso da API está habilitado, chaves são fornecidas somente por arquivo
 secreto externo e representadas como SHA-256. Papéis, escopos de projeto e quotas são avaliados
 antes da operação. Chaves apresentadas não entram em respostas, logs, traces ou métricas.
+
+A interface operacional mantém a API key somente em `sessionStorage` e não carrega scripts de CDN.
+Isso limita persistência, mas não elimina risco de XSS; uso público requer identidade federada,
+sessão segura, CSP revisada e processo contínuo de atualização das dependências web.
 Árvores truncadas, caminhos inseguros, SHAs inválidos e arquivos acima dos limites são recusados ou
 ignorados. Conteúdo só é baixado quando `include_content=true`, de um subconjunto textual limitado
 e priorizado. O texto precisa ser UTF-8, recebe hash SHA-256 e passa por detecção conservadora de
