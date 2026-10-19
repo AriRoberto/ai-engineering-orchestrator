@@ -1,7 +1,9 @@
+from pathlib import Path
 from uuid import UUID
 
 import structlog
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
@@ -30,6 +32,7 @@ from ai_engineering.integrations.llm.base import LLMRequest
 from ai_engineering.integrations.llm.providers import build_llm_provider
 from ai_engineering.integrations.mcp.client import SimulatedProjectMCPClient
 from ai_engineering.integrations.mcp.models import (
+    MCPApprovalRequest,
     MCPInvocation,
     MCPInvocationRequest,
     MCPToolDefinition,
@@ -324,6 +327,22 @@ def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
 
 
 @app.post(
+    "/v1/mcp/invocations/{invocation_id}/approve",
+    response_model=MCPInvocation,
+    tags=["mcp"],
+)
+def approve_mcp_invocation(
+    invocation_id: UUID,
+    request: MCPApprovalRequest,
+) -> MCPInvocation:
+    authorize_project(request.project_id)
+    try:
+        return mcp_gateway.approve(invocation_id, request.project_id, request.approved_by)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post(
     "/v1/evidence/executions",
     response_model=Execution,
     status_code=status.HTTP_201_CREATED,
@@ -345,3 +364,11 @@ def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Executi
 def list_evidence_audits(project_id: str) -> list[EvidenceAccessAudit]:
     authorize_project(project_id)
     return evidence_audit_repository.list(project_id)
+
+
+web_directory = next(
+    (path for path in (Path("web-dist"), Path("web/dist")) if path.is_dir()),
+    None,
+)
+if web_directory:
+    app.mount("/ui", StaticFiles(directory=web_directory, html=True), name="operations-ui")

@@ -81,11 +81,34 @@ Em 19/10/2026, o laboratório confirmou health público, HTTP 401 sem credencial
 ou projeto não autorizado, HTTP 429 após exceder a quota e ausência das chaves nas respostas. O
 contrato OpenAPI declara `X-API-Key` para as operações `/v1` quando o controle está habilitado.
 
+## Incremento 5 — Interface operacional
+
+Estado: concluído.
+
+Entregas:
+
+- aplicação React compilada e servida em `/ui/` pela mesma imagem da API;
+- histórico e detalhes de execuções;
+- fontes de evidência e auditorias por projeto;
+- fila de aprovações MCP;
+- aprovação por ID, vinculada por `approval_of` e protegida contra repetição;
+- API key mantida somente na sessão da aba;
+- layout responsivo e link para o dashboard Grafana.
+
+A interface não decide permissões: toda leitura e aprovação passa novamente pela autenticação,
+papel, escopo de projeto e quota do backend. A chave em `sessionStorage` é uma solução de laboratório;
+identidade federada e sessão segura continuam necessárias antes de exposição pública.
+
+Em 19/10/2026, o laboratório compilou a interface com Vite, confirmou sua publicação em `/ui/`,
+aprovou uma invocação MCP pendente e validou o vínculo `approval_of`, o estado final `COMPLETED` e
+a rejeição de uma segunda aprovação. A suíte completa registrou 74 testes aprovados e 91% de
+cobertura.
+
 ## Próximos incrementos
 
 1. métricas de dependências e canal de notificação;
-2. interface para histórico, fontes e aprovações;
-3. Kubernetes, identidade federada, quotas distribuídas, SLOs e runbooks.
+2. Kubernetes, identidade federada, quotas distribuídas, SLOs e runbooks.
 
-Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md) e
-[ADR-008](../architecture/ADR-008-api-access-control.md).
+Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),
+[ADR-008](../architecture/ADR-008-api-access-control.md) e
+[ADR-009](../architecture/ADR-009-operations-ui.md).
