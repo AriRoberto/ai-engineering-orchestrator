@@ -47,6 +47,26 @@
       "targets": [{"expr": "up{job=\"ai-engineering-orchestrator\"}", "legendFormat": "API", "refId": "A"}],
       "title": "Disponibilidade do target",
       "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 16},
+      "id": 6,
+      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "targets": [{"expr": "aieo:sli_availability:ratio_rate30d", "legendFormat": "disponibilidade", "refId": "A"}],
+      "title": "SLI de disponibilidade — 30 dias",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 16},
+      "id": 7,
+      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "targets": [{"expr": "0.005 - (1 - aieo:sli_availability:ratio_rate30d)", "legendFormat": "orçamento restante", "refId": "A"}],
+      "title": "Orçamento de erro restante — 30 dias",
+      "type": "stat"
     }
   ],
   "refresh": "10s",

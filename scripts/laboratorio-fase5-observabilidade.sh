@@ -15,6 +15,10 @@ docker run --rm --entrypoint promtool \
   -v "${PWD}/observability/rules:/etc/prometheus/rules:ro" \
   prom/prometheus:v3.7.1 \
   check rules /etc/prometheus/rules/aieo-alerts.yml
+docker run --rm --entrypoint promtool \
+  -v "${PWD}/observability/rules:/etc/prometheus/rules:ro" \
+  prom/prometheus:v3.7.1 \
+  check rules /etc/prometheus/rules/aieo-slos.yml
 
 echo "2/5 Iniciando API, PostgreSQL, Prometheus e Grafana..."
 docker compose -f compose.yaml -f compose.observability.yaml up --build -d
@@ -43,6 +47,8 @@ curl --fail --silent "${base_url}/metrics" | grep -q 'aieo_executions_total'
 curl --fail --silent "${prometheus_url}/api/v1/rules" | grep -q 'AIEOApiUnavailable'
 curl --fail --silent "${prometheus_url}/api/v1/rules" | grep -q 'AIEOHighErrorRate'
 curl --fail --silent "${prometheus_url}/api/v1/rules" | grep -q 'AIEOHighP95Latency'
+curl --fail --silent "${prometheus_url}/api/v1/rules" | grep -q 'AIEOAvailabilityBudgetFastBurn'
+curl --fail --silent "${prometheus_url}/api/v1/rules" | grep -q 'aieo:sli_availability:ratio_rate30d'
 curl --fail --silent "${grafana_url}/api/search?query=AI%20Engineering%20Orchestrator" \
   | grep -q 'aieo-overview'
 for _ in $(seq 1 10); do

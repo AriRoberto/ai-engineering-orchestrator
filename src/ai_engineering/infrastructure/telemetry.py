@@ -10,6 +10,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.view import ExplicitBucketHistogramAggregation, View
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -69,7 +70,18 @@ def configure_telemetry(
         FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
     if metrics_enabled:
         metrics.set_meter_provider(
-            MeterProvider(resource=resource, metric_readers=[PrometheusMetricReader()])
+            MeterProvider(
+                resource=resource,
+                metric_readers=[PrometheusMetricReader()],
+                views=[
+                    View(
+                        instrument_name="aieo.http.server.duration",
+                        aggregation=ExplicitBucketHistogramAggregation(
+                            boundaries=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10)
+                        ),
+                    )
+                ],
+            )
         )
     tracer = trace.get_tracer(__name__)
     meter = metrics.get_meter(__name__)

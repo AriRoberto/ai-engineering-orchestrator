@@ -31,6 +31,6 @@ fica em variáveis `AIEO_TELEMETRY_*` e `AIEO_OTEL_*`, sem credenciais na imagem
 
 - traces seguem um padrão aberto e podem ser enviados a coletores compatíveis;
 - suporte pode correlacionar uma resposta com logs e uma execução;
-- traces, métricas, dashboard e alertas básicos ficam disponíveis; notificações e SLOs continuam
+- traces, métricas, dashboard, alertas e SLIs ficam disponíveis; notificações gerenciadas continuam
   incrementais;
 - atributos devem permanecer técnicos e não incluir prompts, conteúdos ou credenciais.

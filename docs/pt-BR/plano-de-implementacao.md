@@ -84,7 +84,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    aprovações MCP integradas à API governada;
 6. **Implantação Kubernetes — implementada localmente.** Base Kustomize, probes, recursos,
    políticas, migração e referências externas de segredos; validação em cluster pendente;
-7. avaliação contínua, SLOs, runbooks e resposta a incidentes;
+7. **SLOs e resposta a incidentes — implementados localmente.** Recording rules, burn rate,
+   dashboard, severidades e runbooks; calibração em homologação pendente;
 8. compilação da documentação oficial e release versionado.
 
 ## Ordem imediata
@@ -93,7 +94,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
 4. provisionar homologação e validar imagem, migração, rede, probes e rollback no cluster;
-5. iniciar SLOs, runbooks e resposta a incidentes.
+5. configurar identidade federada, quotas distribuídas e canal gerenciado de notificação;
+6. executar a validação de release e promover `develop` para `main` em um único PR.
 
 ## Rastreabilidade
 

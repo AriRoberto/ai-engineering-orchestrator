@@ -14,6 +14,8 @@
   MCP vinculadas, compilada e servida pela mesma imagem da API.
 - Sexto incremento da Fase 5 com base Kustomize segura, prontidão dependente do PostgreSQL, Job de
   migração e laboratório reproduzível.
+- Sétimo incremento da Fase 5 com SLIs, SLOs, alertas multi-janela de burn rate, dashboard de
+  orçamento de erro e runbooks de resposta a incidentes.
 
 - Fundação incremental da Fase 2: PostgreSQL/pgvector, ingestão documental, busca híbrida isolada
   por projeto, feedback persistente, provedor LLM simulado e adaptador opcional para OpenAI Agents SDK.
