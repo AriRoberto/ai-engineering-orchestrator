@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,9 @@ class Settings(BaseSettings):
     knowledge_chunk_overlap: int = 100
     mcp_project_config_dir: str = "configs/projects"
     github_evidence_timeout_seconds: float = 10.0
+    github_private_read_token: SecretStr | None = None
+    github_private_read_token_file: str | None = None
+    github_private_read_repository: str = "AriRoberto/app-ams"
     evidence_max_files: int = 200
     evidence_max_file_bytes: int = 1_000_000
     evidence_max_total_bytes: int = 5_000_000

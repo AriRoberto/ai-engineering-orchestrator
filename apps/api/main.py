@@ -8,6 +8,11 @@ from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.postgres_repository import PostgresExecutionRepository
 from ai_engineering.application.repository import InMemoryExecutionRepository
 from ai_engineering.domain.models import Execution, TaskRequest
+from ai_engineering.evidence.audit import (
+    EvidenceAccessAudit,
+    EvidenceAuditRepository,
+    PostgresEvidenceAuditRepository,
+)
 from ai_engineering.evidence.context import EvidenceContextBuilder
 from ai_engineering.evidence.github import (
     EvidenceCollectionError,
@@ -47,6 +52,10 @@ from ai_engineering.knowledge.service import (
 )
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
 from ai_engineering.security.content import KnowledgeContentGuard
+from ai_engineering.security.credentials import (
+    FileGitHubTokenProvider,
+    ScopedGitHubTokenProvider,
+)
 from ai_engineering.security.secrets import SecretRedactor
 
 settings = get_settings()
@@ -80,6 +89,26 @@ mcp_gateway = MCPGateway(
     MCPPolicyStore(settings.mcp_project_config_dir),
     mcp_audit_repository,
 )
+github_credential_provider = (
+    FileGitHubTokenProvider(
+        settings.github_private_read_token_file,
+        settings.github_private_read_repository,
+    )
+    if settings.github_private_read_token_file
+    else ScopedGitHubTokenProvider(
+        (
+            settings.github_private_read_token.get_secret_value()
+            if settings.github_private_read_token
+            else None
+        ),
+        settings.github_private_read_repository,
+    )
+)
+evidence_audit_repository = (
+    PostgresEvidenceAuditRepository(settings.database_url)
+    if settings.database_url
+    else EvidenceAuditRepository()
+)
 orchestrator = AIEngineeringOrchestrator(
     default_agents(),
     repository,
@@ -94,7 +123,10 @@ orchestrator = AIEngineeringOrchestrator(
 evidence_execution_service = EvidenceExecutionService(
     settings.mcp_project_config_dir,
     GitHubEvidenceCollector(
-        UrllibGitHubTreeTransport(settings.github_evidence_timeout_seconds),
+        UrllibGitHubTreeTransport(
+            settings.github_evidence_timeout_seconds,
+            github_credential_provider,
+        ),
         max_files=settings.evidence_max_files,
         max_file_bytes=settings.evidence_max_file_bytes,
         max_total_bytes=settings.evidence_max_total_bytes,
@@ -106,6 +138,7 @@ evidence_execution_service = EvidenceExecutionService(
     ),
     orchestrator,
     EvidenceContextBuilder(settings.evidence_context_max_chars),
+    evidence_audit_repository,
 )
 
 
@@ -257,3 +290,8 @@ def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Executi
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except EvidenceCollectionError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.get("/v1/evidence/audits", response_model=list[EvidenceAccessAudit], tags=["evidence"])
+def list_evidence_audits(project_id: str) -> list[EvidenceAccessAudit]:
+    return evidence_audit_repository.list(project_id)

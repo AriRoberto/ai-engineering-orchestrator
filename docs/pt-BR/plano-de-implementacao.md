@@ -61,8 +61,9 @@ Incrementos:
    como dado não confiável.
 4. **Avaliação adversarial — concluída no corpus inicial.** Prompt injection, evasões simples,
    redaction, integridade de citações e limiar de aprovação reproduzível.
-5. **Piloto privado somente leitura — próximo.** Credencial de curta duração, secret store, escopo por
-   repositório, auditoria e nenhuma escrita.
+5. **Piloto privado somente leitura — implementação integrada; validação externa pendente.**
+   Provedor de credencial em arquivo, escopo por repositório, transporte autenticado e laboratório
+   Compose; falta executar contra o GitHub com credencial real de escopo mínimo.
 
 Critério de saída da Fase 4: os dois pilotos produzem diagnósticos rastreáveis sem escrita, com
 fontes, limites, identidade de acesso e testes adversariais documentados.
@@ -80,9 +81,9 @@ Planejada após o critério de saída da Fase 4:
 
 ## Ordem imediata
 
-1. desenhar autenticação somente leitura do piloto privado;
-2. implementar secret store e identidade de acesso sem expor credenciais à execução;
-3. validar o piloto privado e encerrar a Fase 4 com relatório de critérios de saída;
+1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
+2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
+3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
 4. iniciar observabilidade como primeiro incremento da Fase 5.
 
 ## Rastreabilidade
@@ -91,6 +92,7 @@ Planejada após o critério de saída da Fase 4:
 - [Fase 4 — piloto público](fase-4-piloto-publico.md)
 - [Laboratório da Fase 4](laboratorio-fase4.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
+- [Laboratório privado da Fase 4](laboratorio-fase4-privado.md)
 - [ADRs](../architecture/)
 - [Histórico de alterações](../../CHANGELOG.md)
 - [Política de segurança](../../SECURITY.md)

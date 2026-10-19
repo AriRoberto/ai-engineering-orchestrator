@@ -61,6 +61,11 @@ curl --fail --silent --show-error \
   -o "$temp_dir/persistida.json"
 json_assert "$temp_dir/persistida.json" \
   'data["id"] == data["id"] and data["request"]["context"]["evidence"]["total_bytes"] >= 0'
+curl --fail --silent --show-error \
+  "$api_url/v1/evidence/audits?project_id=app-financas" \
+  -o "$temp_dir/auditoria-publica.json"
+json_assert "$temp_dir/auditoria-publica.json" \
+  'data[0]["status"] == "COMPLETED" and data[0]["execution_id"] is not None and len(data[0]["revision"]) == 40'
 
 printf '4/4 Confirmando bloqueio do piloto privado...\n'
 codigo_http="$(curl --silent --show-error -o "$temp_dir/privado.json" -w '%{http_code}' \
@@ -71,6 +76,11 @@ if [[ "$codigo_http" != "403" ]]; then
   printf 'Era esperado HTTP 403 para app-ams, mas a API retornou %s.\n' "$codigo_http"
   exit 1
 fi
+curl --fail --silent --show-error \
+  "$api_url/v1/evidence/audits?project_id=app-ams" \
+  -o "$temp_dir/auditoria-privada.json"
+json_assert "$temp_dir/auditoria-privada.json" \
+  'data[0]["status"] == "DENIED" and data[0]["authenticated"] is False'
 
 printf '\n✓ Laboratório da Fase 4 concluído com sucesso.\n'
 printf 'Execução: %s\n' "$execution_id"

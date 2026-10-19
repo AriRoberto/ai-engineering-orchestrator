@@ -9,7 +9,7 @@ from ai_engineering.evidence.context import EvidenceContextBuilder
 from ai_engineering.evidence.github import (
     EvidenceCollectionError,
     GitHubEvidenceCollector,
-    parse_public_github_project,
+    parse_github_project,
 )
 from ai_engineering.evidence.models import EvidenceExecutionRequest
 from ai_engineering.evidence.service import EvidenceExecutionService
@@ -20,11 +20,18 @@ from ai_engineering.security.secrets import SecretRedactor
 
 class FakeTransport:
     def __init__(
-        self, payload: dict[str, object], contents: dict[str, bytes] | None = None
+        self,
+        payload: dict[str, object],
+        contents: dict[str, bytes] | None = None,
+        authenticated: bool = False,
     ) -> None:
         self.payload = payload
         self.contents = contents or {}
         self.calls: list[tuple[str, str, str]] = []
+        self.authenticated = authenticated
+
+    def has_credentials(self, owner: str, repository: str) -> bool:
+        return self.authenticated
 
     def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:
         self.calls.append((owner, repository, ref))
@@ -66,7 +73,7 @@ def test_collector_filters_and_records_provenance() -> None:
             ],
         }
     )
-    project = parse_public_github_project(project_config())
+    project = parse_github_project(project_config())
 
     collection = GitHubEvidenceCollector(transport).collect(project)
 
@@ -77,11 +84,27 @@ def test_collector_filters_and_records_provenance() -> None:
     assert collection.total_bytes == 100
 
 
-def test_private_or_writable_project_is_denied() -> None:
+def test_writable_project_is_denied() -> None:
     config = project_config()
-    config["visibility"] = "private"
-    with pytest.raises(PermissionError, match="públicos"):
-        parse_public_github_project(config)
+    config["mode"] = "write"
+    with pytest.raises(PermissionError, match="somente leitura"):
+        parse_github_project(config)
+
+
+def test_private_project_requires_scoped_credentials() -> None:
+    config = project_config()
+    config.update({"visibility": "private", "authenticated_read_only": True})
+    project = parse_github_project(config)
+    payload = {"sha": "a" * 40, "truncated": False, "tree": []}
+
+    with pytest.raises(PermissionError, match="Credencial"):
+        GitHubEvidenceCollector(FakeTransport(payload)).collect(project)
+
+    result = GitHubEvidenceCollector(
+        FakeTransport(payload, authenticated=True)
+    ).collect(project)
+    assert result.metadata["visibility"] == "private"
+    assert result.metadata["authenticated"] is True
 
 
 def test_truncated_tree_fails_closed() -> None:
@@ -89,7 +112,7 @@ def test_truncated_tree_fails_closed() -> None:
         FakeTransport({"sha": "a" * 40, "truncated": True, "tree": []})
     )
     with pytest.raises(EvidenceCollectionError, match="truncada"):
-        collector.collect(parse_public_github_project(project_config()))
+        collector.collect(parse_github_project(project_config()))
 
 
 def test_limits_are_applied_deterministically() -> None:
@@ -107,7 +130,7 @@ def test_limits_are_applied_deterministically() -> None:
         max_files=2,
         max_total_bytes=100,
     )
-    result = collector.collect(parse_public_github_project(project_config()))
+    result = collector.collect(parse_github_project(project_config()))
     assert [item.path for item in result.files] == ["a.py"]
 
 
@@ -148,6 +171,39 @@ def test_collection_is_integrated_into_persisted_execution(tmp_path: Path) -> No
     assert execution.request.context["files"] == ["migrations/001_schema.sql"]
     assert execution.request.context["evidence"]["revision"] == "a" * 40
     assert repository.get(execution.id, "public-project") is not None
+    audits = service.audit_repository.list("public-project")
+    assert len(audits) == 1
+    assert audits[0].status == "COMPLETED"
+    assert audits[0].execution_id == execution.id
+    assert audits[0].revision == "a" * 40
+
+
+def test_denied_evidence_request_is_audited_without_credentials(tmp_path: Path) -> None:
+    config = project_config()
+    config.update({"visibility": "private", "authenticated_read_only": True})
+    (tmp_path / "public-project.yaml").write_text(
+        "\n".join(f"{key}: {value}" for key, value in config.items()), encoding="utf-8"
+    )
+    service = EvidenceExecutionService(
+        str(tmp_path),
+        GitHubEvidenceCollector(
+            FakeTransport({"sha": "a" * 40, "truncated": False, "tree": []})
+        ),
+        AIEngineeringOrchestrator(default_agents(), InMemoryExecutionRepository()),
+    )
+
+    with pytest.raises(PermissionError, match="Credencial"):
+        service.execute(
+            EvidenceExecutionRequest(
+                project_id="public-project", prompt="Revise a documentação"
+            )
+        )
+
+    audit = service.audit_repository.list("public-project")[0]
+    assert audit.status == "DENIED"
+    assert audit.visibility == "private"
+    assert audit.authenticated is False
+    assert audit.execution_id is None
 
 
 def test_text_content_is_redacted_hashed_and_injection_is_quarantined() -> None:
@@ -172,7 +228,7 @@ def test_text_content_is_redacted_hashed_and_injection_is_quarantined() -> None:
     )
 
     result = collector.collect(
-        parse_public_github_project(project_config()), include_content=True
+        parse_github_project(project_config()), include_content=True
     )
 
     files = {item.path: item for item in result.files}
@@ -198,7 +254,7 @@ def test_non_utf8_content_is_not_exposed() -> None:
         {"README.md": b"\xff\xfe"},
     )
     result = GitHubEvidenceCollector(transport).collect(
-        parse_public_github_project(project_config()), include_content=True
+        parse_github_project(project_config()), include_content=True
     )
     assert result.files[0].content_status == "non-utf8"
     assert result.files[0].content is None
@@ -217,7 +273,7 @@ def test_context_builder_applies_budget_and_preserves_citations() -> None:
         {"README.md": b"abcdefghij", "docs/guide.md": b"klmnopqrst"},
     )
     collection = GitHubEvidenceCollector(transport).collect(
-        parse_public_github_project(project_config()), include_content=True
+        parse_github_project(project_config()), include_content=True
     )
 
     context = EvidenceContextBuilder(max_chars=12).build(collection)

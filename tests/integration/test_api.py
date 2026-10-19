@@ -173,3 +173,45 @@ def test_private_project_evidence_is_denied() -> None:
         json={"project_id": "app-ams", "prompt": "Revise a documentação"},
     )
     assert response.status_code == 403
+    audits = client.get("/v1/evidence/audits", params={"project_id": "app-ams"})
+    assert audits.status_code == 200
+    assert audits.json()[0]["status"] == "DENIED"
+    assert audits.json()[0]["authenticated"] is False
+
+
+def test_private_project_uses_authenticated_read_only_transport(monkeypatch) -> None:
+    class AuthenticatedTransport:
+        def has_credentials(self, owner: str, repository: str) -> bool:
+            return (owner, repository) == ("AriRoberto", "app-ams")
+
+        def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:
+            assert (owner, repository, ref) == ("AriRoberto", "app-ams", "main")
+            return {
+                "sha": "a" * 40,
+                "truncated": False,
+                "tree": [
+                    {"path": "README.md", "type": "blob", "size": 100, "sha": "b" * 40}
+                ],
+            }
+
+        def get_content(
+            self, owner: str, repository: str, path: str, ref: str, max_bytes: int
+        ) -> bytes:
+            raise AssertionError("Conteúdo não foi solicitado")
+
+    monkeypatch.setattr(
+        api_main.evidence_execution_service.collector,
+        "transport",
+        AuthenticatedTransport(),
+    )
+    response = client.post(
+        "/v1/evidence/executions",
+        json={"project_id": "app-ams", "prompt": "Revise a documentação", "demo": True},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    evidence = payload["request"]["context"]["evidence"]
+    assert evidence["metadata"]["visibility"] == "private"
+    assert evidence["metadata"]["authenticated"] is True
+    assert "secret-token" not in response.text

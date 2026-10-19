@@ -37,7 +37,7 @@ com quatro novos agentes; recursos futuros continuam identificados explicitament
 | Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
 | Evidências reais do piloto público | Implementado — conteúdo controlado e contexto citado |
 | Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
-| Piloto privado autenticado | Planejado — Fase 4 |
+| Piloto privado autenticado | Implementação local — validação real pendente de credencial somente leitura |
 | React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
@@ -155,6 +155,7 @@ Piloto público da Fase 4:
 - [Coleta governada de evidências](docs/pt-BR/fase-4-piloto-publico.md)
 - [Laboratório prático da Fase 4](docs/pt-BR/laboratorio-fase4.md)
 - [Avaliação adversarial da Fase 4](docs/pt-BR/avaliacao-adversarial-fase4.md)
+- [Laboratório privado somente leitura](docs/pt-BR/laboratorio-fase4-privado.md)
 
 ## Exemplo de uso
 
@@ -186,6 +187,7 @@ Endpoints atuais:
 - `POST /v1/mcp/invocations`
 - `GET /v1/mcp/invocations?project_id=...`
 - `POST /v1/evidence/executions`
+- `GET /v1/evidence/audits?project_id=...`
 
 ## Adicionar projetos e agentes
 
@@ -218,7 +220,7 @@ A CI repete lint, testes e build do container em pushes e pull requests para `ma
 ## Projetos pilotos
 
 - `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.
-- `AriRoberto/app-ams`: privado; exige acesso autenticado e jamais será copiado para esta base pública.
+- `AriRoberto/app-ams`: privado; a coleta autenticada somente leitura está implementada, mas depende de credencial local e não é executada sem ela.
 
 Nenhum piloto é modificado na Fase 1.
 

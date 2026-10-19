@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 eval-fase4
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4
 
 install:
 	python -m pip install -e '.[dev]'
@@ -35,6 +35,9 @@ lab-fase3:
 
 lab-fase4:
 	./scripts/laboratorio-fase4.sh
+
+lab-fase4-privado:
+	./scripts/laboratorio-fase4-privado.sh
 
 eval-fase4:
 	docker run --rm -v "$(CURDIR):/workspace" -w /workspace ai-engineering-orchestrator:latest \
