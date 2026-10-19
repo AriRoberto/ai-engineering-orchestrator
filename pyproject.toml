@@ -5,15 +5,28 @@ build-backend = "hatchling.build"
 [project]
 name = "ai-engineering-orchestrator"
 version = "0.1.0"
-description = "Secure, deterministic multi-agent engineering orchestration foundation"
+description = "Fundação segura e determinística para orquestração multiagente de engenharia"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Ari Roberto" }]
 dependencies = [
+  "alembic>=1.14,<2",
   "fastapi>=0.115,<1",
+  "jsonschema>=4.23,<5",
+  "openai-agents<1",
+  "opentelemetry-api>=1.29,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.29,<2",
+  "opentelemetry-exporter-prometheus>=0.50b0,<1",
+  "opentelemetry-instrumentation-fastapi>=0.50b0,<1",
+  "opentelemetry-sdk>=1.29,<2",
+  "pgvector>=0.3,<1",
+  "psycopg[binary]>=3.2,<4",
   "pydantic>=2.10,<3",
   "pydantic-settings>=2.7,<3",
+  "prometheus-client>=0.21,<1",
+  "pyyaml>=6,<7",
+  "sqlalchemy>=2.0,<3",
   "structlog>=24.4,<26",
   "uvicorn[standard]>=0.34,<1",
 ]
@@ -28,7 +41,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai_engineering"]
+packages = ["src/ai_engineering", "apps"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --cov=ai_engineering --cov-report=term-missing"

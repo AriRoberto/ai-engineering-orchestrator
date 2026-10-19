@@ -1,0 +1,11 @@
+id: laboratorio-fase2
+owner: local-demo
+repository: demo://laboratorio-fase2
+default_branch: develop
+visibility: local
+mode: read-write-demo
+knowledge_namespace: project/laboratorio-fase2
+mcp:
+  allowed_tools:
+    - project-catalog:project_summary
+    - project-catalog:publish_change

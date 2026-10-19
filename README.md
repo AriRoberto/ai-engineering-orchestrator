@@ -6,12 +6,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > Fundação segura e extensível para coordenar agentes especializados em engenharia de software.
-> Secure, extensible foundation for coordinating specialist software-engineering agents.
 
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
-Fase 1 entrega um backend funcional e um modo demo gratuito; recursos futuros aparecem claramente
-no roadmap e não são apresentados como prontos.
+Fase 1 entregou o backend e o modo demo. A Fase 2 já incorporou conhecimento persistente, RAG,
+contrato de LLM, memória de execuções e um gateway MCP governado. A Fase 3 adicionou quatro agentes,
+a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade distribuída.
 
 ## Proposta de valor
 
@@ -26,14 +26,21 @@ no roadmap e não são apresentados como prontos.
 | Capacidade | Estado |
 |---|---|
 | FastAPI, health check e OpenAPI | Implementado |
-| Orquestrador determinístico e quatro agentes | Implementado |
+| Orquestrador determinístico e oito agentes | Implementado |
 | Modo demo e ferramentas simuladas | Implementado |
 | Governança Git e aprovação para escrita | Implementado |
-| PostgreSQL, pgvector e Agentic RAG | Planejado — Fase 2 |
-| LLM/OpenAI Agents SDK e MCP | Planejado — Fase 2 |
-| Database, QA, Security e Documentation Agents | Planejado — Fase 3 |
-| Diagnósticos reais dos pilotos | Planejado — Fase 4 |
-| React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
+| PostgreSQL, pgvector, ingestão e busca híbrida | Implementado na fundação da Fase 2 |
+| Contrato LLM e adaptador OpenAI Agents SDK | Parcial — provedor simulado é o padrão |
+| RAG integrado ao fluxo do orquestrador | Implementado com embeddings de demonstração |
+| Memória persistente de execuções | Implementado com PostgreSQL |
+| MCP com ferramentas governadas | Implementado com servidor simulado e auditoria |
+| Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
+| Evidências reais do piloto público | Implementado — conteúdo controlado e contexto citado |
+| Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
+| Piloto privado autenticado | Implementação local — validação real pendente de credencial somente leitura |
+| OpenTelemetry e correlação HTTP | Implementado — primeiro incremento da Fase 5 |
+| Métricas e coletor Prometheus | Implementado — segundo incremento da Fase 5 |
+| React UI e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
 
@@ -46,13 +53,20 @@ flowchart LR
     P --> DO[DevOps]
     P --> K8[Kubernetes]
     P --> SR[Linux/SRE]
+    P --> DB[Database]
+    P --> QA[QA]
+    P --> SC[Security]
+    P --> DC[Documentation]
     O --> G[Git Governance Service]
-    O --> ER[(Execution Repository)]
+    O --> ER[(Execuções persistentes)]
     G --> H{Aprovação humana}
     H -. fase futura .-> GH[GitHub / Draft PR]
-    O -. fase 2 .-> KB[(PostgreSQL + pgvector)]
-    O -. fase 2 .-> LLM[LLM adapters]
-    O -. fase 2 .-> MCP[MCP integrations]
+    API --> KB[(PostgreSQL + pgvector)]
+    API --> LLM[Adaptadores de LLM]
+    O --> KB
+    O --> LLM
+    O --> MCP[Gateway MCP governado]
+    MCP --> MA[(Auditoria MCP)]
 ```
 
 O domínio define contratos e estados; a aplicação coordena casos de uso; adaptadores de
@@ -65,6 +79,10 @@ permissões. A decisão de orquestração está no [ADR-001](docs/architecture/A
 - **DevOps:** avalia evidências de Git, CI/CD, containers e releases.
 - **Kubernetes:** identifica evidências de manifests e Helm.
 - **Linux/SRE:** produz diagnóstico baseado em evidências, sem comandos arbitrários no host.
+- **Database:** identifica schemas, SQL e migrações versionadas.
+- **QA:** correlaciona arquivos de teste e automação de CI.
+- **Security:** identifica controles, nomes sensíveis, redactions e conteúdos em quarentena.
+- **Documentation:** inventaria Markdown, verifica documentos essenciais e contabiliza texto seguro.
 
 Todos implementam um contrato comum e retornam resultado estruturado. No modo demo, cada resultado
 é marcado com `simulated: true`.
@@ -72,8 +90,9 @@ Todos implementam um contrato comum e retornam resultado estruturado. No modo de
 ## Estados e limites
 
 `PENDING → PLANNING → RUNNING → COMPLETED`, com caminhos explícitos para `WAITING_APPROVAL`,
-`FAILED` e `CANCELLED`. A fundação inclui limite de passos, timeout por agente e retry limitado.
-Controles de tokens/custo e persistência distribuída serão adicionados junto do adaptador LLM.
+`FAILED` e `CANCELLED`. A fundação inclui limite de passos, timeout por agente, retry limitado e
+persistência integral das execuções no PostgreSQL. O uso de tokens é estimado; custo oficial ainda
+depende dos dados reportados pelo provedor e de uma tabela de preços validada.
 
 ## Segurança e governança Git
 
@@ -115,6 +134,35 @@ uvicorn apps.api.main:app --reload
 
 A documentação OpenAPI fica em `http://localhost:8000/docs`.
 
+Guias da Fase 1:
+
+- [Auditoria e inventário](docs/pt-BR/auditoria-fase1.md)
+- [Guia de arquitetura](docs/pt-BR/guia-arquitetura.md)
+- [Primeiros passos no macOS Apple Silicon](docs/pt-BR/primeiros-passos.md)
+- [Laboratório guiado](docs/pt-BR/laboratorio-fase1.md)
+- [Laboratório prático da Fase 2](docs/pt-BR/laboratorio-fase2.md)
+
+Fundação da Fase 2:
+
+- [Inteligência e conhecimento](docs/pt-BR/fase-2-fundacao.md)
+
+Especialização da Fase 3:
+
+- [Agentes especializados](docs/pt-BR/fase-3-especializacao.md)
+- [Laboratório prático da Fase 3](docs/pt-BR/laboratorio-fase3.md)
+
+Piloto público da Fase 4:
+
+- [Plano oficial de implementação](docs/pt-BR/plano-de-implementacao.md)
+- [Coleta governada de evidências](docs/pt-BR/fase-4-piloto-publico.md)
+- [Laboratório prático da Fase 4](docs/pt-BR/laboratorio-fase4.md)
+- [Avaliação adversarial da Fase 4](docs/pt-BR/avaliacao-adversarial-fase4.md)
+- [Laboratório privado somente leitura](docs/pt-BR/laboratorio-fase4-privado.md)
+
+Produto e operação da Fase 5:
+
+- [Observabilidade e próximos incrementos](docs/pt-BR/fase-5-produto-operacao.md)
+
 ## Exemplo de uso
 
 ```bash
@@ -131,11 +179,22 @@ curl -X POST http://localhost:8000/v1/executions \
 Endpoints atuais:
 
 - `GET /health`
+- `GET /metrics`
 - `GET /v1/agents`
 - `POST /v1/executions`
-- `GET /v1/executions`
-- `GET /v1/executions/{id}`
-- `POST /v1/executions/{id}/cancel`
+- `GET /v1/executions?project_id=...`
+- `GET /v1/executions/{id}?project_id=...`
+- `POST /v1/executions/{id}/cancel?project_id=...`
+- `POST /v1/knowledge/documents`
+- `POST /v1/knowledge/search`
+- `DELETE /v1/knowledge/documents/{id}`
+- `POST /v1/feedback`
+- `POST /v1/llm/generate`
+- `GET /v1/mcp/tools?project_id=...`
+- `POST /v1/mcp/invocations`
+- `GET /v1/mcp/invocations?project_id=...`
+- `POST /v1/evidence/executions`
+- `GET /v1/evidence/audits?project_id=...`
 
 ## Adicionar projetos e agentes
 
@@ -145,11 +204,14 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 
 ## LLM, MCP e Agentic RAG
 
-Esses recursos estão deliberadamente separados da Fase 1. A Fase 2 adicionará adaptadores de LLM
-configuráveis por ambiente, limites de tokens/custo/tempo, ingestão com proteção contra prompt
-injection, recuperação híbrida com fontes e PostgreSQL/pgvector. O aprendizado ocorrerá por memória
-persistente e feedback validado — não por alegação de retreinamento automático. MCP será integrado
-por adaptadores com allowlists, schemas validados e escopos por projeto.
+A fundação da Fase 2 já inclui um contrato configurável de LLM, provedor simulado, adaptador opcional
+para OpenAI Agents SDK, ingestão protegida, recuperação híbrida com fontes, PostgreSQL/pgvector e
+feedback persistente. Recuperação e LLM já participam do fluxo do orquestrador com limites de tokens
+e uso estimado explicitamente identificado. As execuções e suas linhas do tempo são persistidas no
+PostgreSQL. Medição oficial de custos continua pendente. O gateway MCP aplica allowlists, schemas,
+aprovação e escopos por projeto; o transporte real permanece desacoplado e o laboratório usa um
+servidor simulado sem efeitos externos. O aprendizado ocorre por memória
+persistente e feedback validado — não por alegação de retreinamento automático.
 
 ## Testes e qualidade
 
@@ -164,23 +226,25 @@ A CI repete lint, testes e build do container em pushes e pull requests para `ma
 
 ## Projetos pilotos
 
-- `AriRoberto/app-financas`: público, configurado para inspeção futura somente leitura.
-- `AriRoberto/app-ams`: privado; exige acesso autenticado e jamais será copiado para esta base pública.
+- `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.
+- `AriRoberto/app-ams`: privado; a coleta autenticada somente leitura está implementada, mas depende de credencial local e não é executada sem ela.
 
 Nenhum piloto é modificado na Fase 1.
 
-## Roadmap
+## Roteiro de evolução
+
+O detalhamento oficial, critérios de conclusão e ordem dos incrementos estão no
+[Plano de implementação](docs/pt-BR/plano-de-implementacao.md).
 
 1. **Fundação:** backend, orquestrador determinístico, quatro agentes, governança, testes e Docker.
-2. **Inteligência e RAG:** LLMs, PostgreSQL/pgvector, ingestão, memória e feedback.
-3. **Especialização:** Database, QA, Security e Documentation Agents.
-4. **Pilotos:** diagnósticos autenticados e somente leitura; mudanças apenas após aprovação específica.
-5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
-
-## English quick start
-
-Run `docker compose up --build`, open `/docs`, and submit a demo execution as shown above. The current
-release is a deterministic, read-only foundation. See [Phase 1 details](docs/en/PHASE-1.md).
+2. **Inteligência e RAG:** fundação, RAG, memória persistente e governança MCP implementados; custos
+   oficiais, embeddings de produção e transportes MCP reais permanecem em evolução.
+3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados e
+   integrados aos estados das evidências coletadas.
+4. **Pilotos:** inventário, conteúdo controlado, contexto citado e corpus adversarial inicial do
+   piloto público implementados; acesso autenticado ao piloto privado permanece pendente.
+5. **Produto:** correlação e traces implementados; métricas, React, Kubernetes, documentação
+   consolidada e release seguem incrementalmente.
 
 ## Contribuição, licença e contato
 

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from ai_engineering.agents.base import EngineeringAgent
+from ai_engineering.agents.phase3 import DatabaseAgent, DocumentationAgent, QAAgent, SecurityAgent
 from ai_engineering.domain.models import AgentKind, AgentResult, TaskRequest
 
 
 class SoftwareEngineeringAgent(EngineeringAgent):
     kind = AgentKind.SOFTWARE_ENGINEER
-    description = "Stack detection, code and architecture analysis"
+    description = "Detecção de stack e análise de código e arquitetura"
     signatures = {
         "pyproject.toml": "Python",
         "requirements.txt": "Python",
@@ -22,12 +23,12 @@ class SoftwareEngineeringAgent(EngineeringAgent):
     def execute(self, request: TaskRequest) -> AgentResult:
         files = [str(item) for item in request.context.get("files", [])]
         stacks = sorted({stack for name, stack in self.signatures.items() if name in files})
-        findings = [f"Detected stack: {stack}" for stack in stacks]
+        findings = [f"Stack detectada: {stack}" for stack in stacks]
         if not findings:
-            findings = ["Stack not determined from the supplied evidence"]
+            findings = ["Stack não determinada pelas evidências fornecidas"]
         return AgentResult(
             agent=self.kind,
-            summary="Read-only software engineering diagnostic completed",
+            summary="Diagnóstico de engenharia de software somente leitura concluído",
             findings=findings,
             evidence=[f"manifest:{name}" for name in files if name in self.signatures],
             simulated=request.demo,
@@ -36,22 +37,24 @@ class SoftwareEngineeringAgent(EngineeringAgent):
 
 class DevOpsAgent(EngineeringAgent):
     kind = AgentKind.DEVOPS
-    description = "Git, CI/CD, containers and release diagnostics"
+    description = "Diagnósticos de Git, CI/CD, containers e releases"
 
     def execute(self, request: TaskRequest) -> AgentResult:
         files = set(map(str, request.context.get("files", [])))
         findings = []
         findings.append(
-            "Container definition found" if "Dockerfile" in files else "No Dockerfile evidence"
+            "Definição de container encontrada"
+            if "Dockerfile" in files
+            else "Nenhuma evidência de Dockerfile"
         )
         findings.append(
-            "GitHub Actions workflow found"
+            "Workflow do GitHub Actions encontrado"
             if any(name.startswith(".github/workflows/") for name in files)
-            else "No CI workflow evidence"
+            else "Nenhuma evidência de workflow de CI"
         )
         return AgentResult(
             agent=self.kind,
-            summary="DevOps diagnostic completed",
+            summary="Diagnóstico DevOps concluído",
             findings=findings,
             simulated=request.demo,
         )
@@ -59,7 +62,7 @@ class DevOpsAgent(EngineeringAgent):
 
 class KubernetesAgent(EngineeringAgent):
     kind = AgentKind.KUBERNETES
-    description = "Kubernetes manifest and delivery diagnostics"
+    description = "Diagnósticos de manifestos e entrega Kubernetes"
 
     def execute(self, request: TaskRequest) -> AgentResult:
         files = list(map(str, request.context.get("files", [])))
@@ -68,8 +71,8 @@ class KubernetesAgent(EngineeringAgent):
         ]
         return AgentResult(
             agent=self.kind,
-            summary="Kubernetes diagnostic completed",
-            findings=[f"{len(manifests)} Kubernetes/Helm evidence item(s) supplied"],
+            summary="Diagnóstico Kubernetes concluído",
+            findings=[f"{len(manifests)} evidência(s) de Kubernetes/Helm fornecida(s)"],
             evidence=manifests,
             simulated=request.demo,
         )
@@ -77,13 +80,15 @@ class KubernetesAgent(EngineeringAgent):
 
 class LinuxSREAgent(EngineeringAgent):
     kind = AgentKind.LINUX_SRE
-    description = "Linux, reliability and incident diagnostics"
+    description = "Diagnósticos de Linux, confiabilidade e incidentes"
 
     def execute(self, request: TaskRequest) -> AgentResult:
         return AgentResult(
             agent=self.kind,
-            summary="Linux/SRE diagnostic completed",
-            findings=["No host command executed; analysis is evidence-only by policy"],
+            summary="Diagnóstico Linux/SRE concluído",
+            findings=[
+                "Nenhum comando executado no host; por política, a análise usa apenas evidências"
+            ],
             simulated=request.demo,
         )
 
@@ -94,5 +99,9 @@ def default_agents() -> dict[AgentKind, EngineeringAgent]:
         DevOpsAgent(),
         KubernetesAgent(),
         LinuxSREAgent(),
+        DatabaseAgent(),
+        QAAgent(),
+        SecurityAgent(),
+        DocumentationAgent(),
     ]
     return {agent.kind: agent for agent in agents}
