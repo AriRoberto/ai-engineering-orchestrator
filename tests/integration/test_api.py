@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi.testclient import TestClient
 
 from apps.api import main as api_main
@@ -10,6 +12,33 @@ def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
+    assert UUID(response.headers["X-Request-ID"])
+    assert len(response.headers["X-Trace-ID"]) == 32
+
+
+def test_request_id_is_propagated_only_when_valid() -> None:
+    request_id = "fe744f62-3858-41db-a1a1-b8a32805db54"
+    propagated = client.get("/health", headers={"X-Request-ID": request_id})
+    replaced = client.get("/health", headers={"X-Request-ID": "unsafe-value"})
+
+    assert propagated.headers["X-Request-ID"] == request_id
+    assert replaced.headers["X-Request-ID"] != "unsafe-value"
+    assert UUID(replaced.headers["X-Request-ID"])
+
+
+def test_prometheus_metrics_include_http_and_execution_counters() -> None:
+    client.post(
+        "/v1/executions",
+        json={"project_id": "metrics-test", "prompt": "Analise o código", "demo": True},
+    )
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "aieo_http_server_requests_total" in response.text
+    assert "aieo_http_server_duration_seconds" in response.text
+    assert "aieo_executions_total" in response.text
+    assert 'execution_source="direct"' in response.text
 
 
 def test_demo_execution() -> None:
@@ -173,3 +202,45 @@ def test_private_project_evidence_is_denied() -> None:
         json={"project_id": "app-ams", "prompt": "Revise a documentação"},
     )
     assert response.status_code == 403
+    audits = client.get("/v1/evidence/audits", params={"project_id": "app-ams"})
+    assert audits.status_code == 200
+    assert audits.json()[0]["status"] == "DENIED"
+    assert audits.json()[0]["authenticated"] is False
+
+
+def test_private_project_uses_authenticated_read_only_transport(monkeypatch) -> None:
+    class AuthenticatedTransport:
+        def has_credentials(self, owner: str, repository: str) -> bool:
+            return (owner, repository) == ("AriRoberto", "app-ams")
+
+        def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:
+            assert (owner, repository, ref) == ("AriRoberto", "app-ams", "main")
+            return {
+                "sha": "a" * 40,
+                "truncated": False,
+                "tree": [
+                    {"path": "README.md", "type": "blob", "size": 100, "sha": "b" * 40}
+                ],
+            }
+
+        def get_content(
+            self, owner: str, repository: str, path: str, ref: str, max_bytes: int
+        ) -> bytes:
+            raise AssertionError("Conteúdo não foi solicitado")
+
+    monkeypatch.setattr(
+        api_main.evidence_execution_service.collector,
+        "transport",
+        AuthenticatedTransport(),
+    )
+    response = client.post(
+        "/v1/evidence/executions",
+        json={"project_id": "app-ams", "prompt": "Revise a documentação", "demo": True},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    evidence = payload["request"]["context"]["evidence"]
+    assert evidence["metadata"]["visibility"] == "private"
+    assert evidence["metadata"]["authenticated"] is True
+    assert "secret-token" not in response.text

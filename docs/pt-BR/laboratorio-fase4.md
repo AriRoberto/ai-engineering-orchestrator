@@ -21,7 +21,8 @@ O laboratório inicia a aplicação, solicita uma execução com `include_conten
 - ausência de texto persistido em qualquer item em quarentena;
 - contexto limitado com citações e fontes registradas na execução;
 - conclusão e persistência da execução;
-- negação do projeto privado `app-ams`.
+- negação do projeto privado `app-ams` sem credencial.
+- auditoria persistente da coleta pública e da negação privada.
 
 Falhas de DNS, rate limit ou indisponibilidade do GitHub encerram a execução sem usar dados parciais.
 A avaliação adversarial é local, determinística e deve passar antes do laboratório conectado.

@@ -2,6 +2,11 @@
 
 ## Não lançado
 
+- Primeiro incremento da Fase 5 com instrumentação OpenTelemetry da API, exportação OTLP/HTTP
+  opcional, IDs de requisição validados e correlação entre resposta, trace, logs e execução.
+- Segundo incremento da Fase 5 com métricas HTTP e de execuções, endpoint Prometheus, coletor local
+  em overlay Compose e laboratório reproduzível com rótulos de baixa cardinalidade.
+
 - Fundação incremental da Fase 2: PostgreSQL/pgvector, ingestão documental, busca híbrida isolada
   por projeto, feedback persistente, provedor LLM simulado e adaptador opcional para OpenAI Agents SDK.
 - Documentação integralmente em português e referências oficiais atualizadas.
@@ -23,9 +28,13 @@
   persistidas e separação explícita entre instruções confiáveis e dados externos.
 - Quarto incremento da Fase 4 com corpus adversarial versionado, métricas por categoria, limiar de
   aprovação, normalização contra evasões simples e validação de citações, hashes, origem e orçamento.
+- Implementação local do piloto privado somente leitura com credencial GitHub em arquivo secreto,
+  escopo por repositório, falha fechada e laboratório Compose; validação contra o repositório real
+  ainda pendente.
+- Auditoria persistente de acessos a evidências, incluindo conclusões, negações e falhas isoladas
+  por projeto, sem armazenamento de credenciais.
 
 ## 0.1.0 - 2026-10-13
 
 - Fundação inicial da Fase 1: API, orquestrador determinístico, quatro agentes, modo demonstração,
   governança Git, testes, Docker, CI e documentação da fundação.
-

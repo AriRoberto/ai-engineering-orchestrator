@@ -10,6 +10,7 @@ services:
       - ./migrations/001_phase2_knowledge.sql:/docker-entrypoint-initdb.d/001_phase2_knowledge.sql:ro
       - ./migrations/002_phase2_executions.sql:/docker-entrypoint-initdb.d/002_phase2_executions.sql:ro
       - ./migrations/003_phase2_mcp_audit.sql:/docker-entrypoint-initdb.d/003_phase2_mcp_audit.sql:ro
+      - ./migrations/004_phase4_evidence_audit.sql:/docker-entrypoint-initdb.d/004_phase4_evidence_audit.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aieo -d aieo"]
       interval: 5s
@@ -27,6 +28,8 @@ services:
       AIEO_DEMO_MODE: "true"
       AIEO_DATABASE_URL: postgresql+psycopg://aieo:aieo@postgres:5432/aieo
       AIEO_LLM_PROVIDER: simulated
+      AIEO_TELEMETRY_ENABLED: "true"
+      AIEO_METRICS_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy

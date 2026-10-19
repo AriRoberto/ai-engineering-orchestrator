@@ -1,0 +1,11 @@
+services:
+  api:
+    environment:
+      AIEO_GITHUB_PRIVATE_READ_TOKEN_FILE: /run/secrets/github_private_read_token
+      AIEO_GITHUB_PRIVATE_READ_REPOSITORY: AriRoberto/app-ams
+    secrets:
+      - github_private_read_token
+
+secrets:
+  github_private_read_token:
+    file: ${AIEO_GITHUB_PRIVATE_READ_TOKEN_FILE:?Defina o caminho do arquivo de token somente leitura}

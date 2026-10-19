@@ -8,6 +8,7 @@ from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from ai_engineering.evidence.models import EvidenceCollection, EvidenceFile
+from ai_engineering.security.credentials import GitHubCredentialProvider
 
 
 class EvidenceCollectionError(RuntimeError):
@@ -15,6 +16,8 @@ class EvidenceCollectionError(RuntimeError):
 
 
 class GitHubTreeTransport(Protocol):
+    def has_credentials(self, owner: str, repository: str) -> bool: ...
+
     def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]: ...
 
     def get_content(
@@ -25,8 +28,32 @@ class GitHubTreeTransport(Protocol):
 class UrllibGitHubTreeTransport:
     api_url = "https://api.github.com"
 
-    def __init__(self, timeout_seconds: float = 10.0) -> None:
+    def __init__(
+        self,
+        timeout_seconds: float = 10.0,
+        credential_provider: GitHubCredentialProvider | None = None,
+    ) -> None:
         self.timeout_seconds = timeout_seconds
+        self.credential_provider = credential_provider
+
+    def has_credentials(self, owner: str, repository: str) -> bool:
+        return self._token(owner, repository) is not None
+
+    def _token(self, owner: str, repository: str) -> str | None:
+        if not self.credential_provider:
+            return None
+        return self.credential_provider.token_for(owner, repository)
+
+    def _headers(self, owner: str, repository: str, accept: str) -> dict[str, str]:
+        headers = {
+            "Accept": accept,
+            "User-Agent": "ai-engineering-orchestrator",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        token = self._token(owner, repository)
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
 
     def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:
         path = "/repos/{}/{}/git/trees/{}".format(
@@ -35,11 +62,7 @@ class UrllibGitHubTreeTransport:
         url = f"{self.api_url}{path}?{urlencode({'recursive': '1'})}"
         request = Request(  # noqa: S310 -- URL base is a fixed GitHub HTTPS endpoint.
             url,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "User-Agent": "ai-engineering-orchestrator",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
+            headers=self._headers(owner, repository, "application/vnd.github+json"),
         )
         with urlopen(request, timeout=self.timeout_seconds) as response:  # noqa: S310
             return json.load(response)
@@ -53,11 +76,7 @@ class UrllibGitHubTreeTransport:
         url = f"{self.api_url}{endpoint}?{urlencode({'ref': ref})}"
         request = Request(  # noqa: S310 -- URL base is a fixed GitHub HTTPS endpoint.
             url,
-            headers={
-                "Accept": "application/vnd.github.raw+json",
-                "User-Agent": "ai-engineering-orchestrator",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
+            headers=self._headers(owner, repository, "application/vnd.github.raw+json"),
         )
         with urlopen(request, timeout=self.timeout_seconds) as response:  # noqa: S310
             content = response.read(max_bytes + 1)
@@ -67,22 +86,27 @@ class UrllibGitHubTreeTransport:
 
 
 @dataclass(frozen=True)
-class PublicGitHubProject:
+class GitHubProject:
     project_id: str
     repository_url: str
     owner: str
     repository: str
     ref: str
+    visibility: str
+    requires_authentication: bool
 
 
-def parse_public_github_project(config: dict[str, object]) -> PublicGitHubProject:
-    if config.get("visibility") != "public" or config.get("mode") != "read-only":
-        raise PermissionError("Coleta disponível somente para projetos públicos e somente leitura")
+def parse_github_project(config: dict[str, object]) -> GitHubProject:
+    visibility = str(config.get("visibility", ""))
+    if visibility not in {"public", "private"} or config.get("mode") != "read-only":
+        raise PermissionError("Coleta disponível somente para projetos GitHub somente leitura")
+    if visibility == "private" and config.get("authenticated_read_only") is not True:
+        raise PermissionError("Projeto privado não habilitado para leitura autenticada")
     repository_url = str(config.get("repository", ""))
     parsed = urlparse(repository_url)
     parts = [part for part in parsed.path.split("/") if part]
     if parsed.scheme != "https" or parsed.hostname != "github.com" or len(parts) != 2:
-        raise PermissionError("Repositório GitHub público inválido")
+        raise PermissionError("Repositório GitHub inválido")
     owner, repository = parts
     if repository.endswith(".git"):
         repository = repository[:-4]
@@ -92,12 +116,14 @@ def parse_public_github_project(config: dict[str, object]) -> PublicGitHubProjec
     ref = str(config.get("default_branch", ""))
     if not valid_component.fullmatch(ref):
         raise PermissionError("Branch padrão inválida")
-    return PublicGitHubProject(
+    return GitHubProject(
         project_id=str(config["id"]),
         repository_url=repository_url,
         owner=owner,
         repository=repository,
         ref=ref,
+        visibility=visibility,
+        requires_authentication=visibility == "private",
     )
 
 
@@ -135,12 +161,16 @@ class GitHubEvidenceCollector:
         self.secret_redactor = secret_redactor
 
     def collect(
-        self, project: PublicGitHubProject, *, include_content: bool = False
+        self, project: GitHubProject, *, include_content: bool = False
     ) -> EvidenceCollection:
+        if project.requires_authentication and not self.transport.has_credentials(
+            project.owner, project.repository
+        ):
+            raise PermissionError("Credencial de leitura privada indisponível")
         try:
             payload = self.transport.get_tree(project.owner, project.repository, project.ref)
         except Exception as exc:
-            raise EvidenceCollectionError("Falha ao consultar a árvore pública do GitHub") from exc
+            raise EvidenceCollectionError("Falha ao consultar a árvore do GitHub") from exc
         if payload.get("truncated") is True:
             raise EvidenceCollectionError("Árvore GitHub truncada; coleta recusada")
         revision = str(payload.get("sha", ""))
@@ -198,11 +228,16 @@ class GitHubEvidenceCollector:
             revision=revision,
             files=files,
             total_bytes=total_bytes,
-            metadata={"tree_entries": len(entries), "limits_applied": True},
+            metadata={
+                "tree_entries": len(entries),
+                "limits_applied": True,
+                "visibility": project.visibility,
+                "authenticated": project.requires_authentication,
+            },
         )
 
     def _collect_content(
-        self, project: PublicGitHubProject, files: list[EvidenceFile]
+        self, project: GitHubProject, files: list[EvidenceFile]
     ) -> None:
         downloaded = 0
         total_bytes = 0

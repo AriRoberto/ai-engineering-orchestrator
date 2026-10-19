@@ -76,8 +76,11 @@ controle complementa a quarentena, mas não substitui avaliações adversariais.
 
 ## Segurança e honestidade do resultado
 
-O `project_id` não controla a URL remota. O destino vem de `configs/projects/app-financas.yaml` e o
-transporte usa somente `https://api.github.com`. O projeto privado `app-ams` recebe HTTP 403.
+O `project_id` não controla a URL remota. O destino vem dos YAMLs locais dos projetos e o transporte
+usa somente `https://api.github.com`. O projeto público `app-financas` não exige credencial. O
+piloto privado `app-ams` só pode ser lido com credencial autorizada para esse repositório; sem ela,
+a API retorna HTTP 403. O token não integra o contexto da execução. Veja o
+[laboratório privado](laboratorio-fase4-privado.md) para configuração e validação.
 
 Os achados indicam padrões derivados do inventário e dos estados de conteúdo, não uma revisão
 semântica completa do código. O modo `demo` continua recomendado até que exista análise controlada
@@ -93,9 +96,17 @@ O terceiro incremento foi validado no fluxo completo pela execução
 `7409579a-695a-425a-afd7-c60a843a7496`, incluindo conteúdo seguro, citações, fontes persistidas e
 bloqueio do piloto privado.
 
-## Próximo incremento
+Em 19/10/2026, a execução `df985c6a-df0b-423d-9c4d-68f38f93f5a9` revalidou o fluxo público após a
+inclusão da auditoria persistente de acesso a evidências. O laboratório confirmou um registro
+`COMPLETED` com revisão, identidade da execução, `visibility: public` e `authenticated: false`, além
+de um registro `DENIED` para a tentativa privada sem credencial.
 
-O corpus adversarial inicial está documentado em
-[avaliacao-adversarial-fase4.md](avaliacao-adversarial-fase4.md). O próximo passo é desenhar e
-implementar acesso autenticado, efêmero e somente leitura ao piloto privado `app-ams`, sem expor a
-credencial ao contexto dos agentes.
+## Estado do piloto privado
+
+O acesso autenticado somente leitura está integrado ao transporte GitHub, com credencial em arquivo
+secreto para Compose e escopo por repositório. A validação automatizada usa transporte simulado;
+a identidade privada, visibilidade e branch `main` do repositório foram confirmadas em 16/10/2026
+pela sessão GitHub local. A validação do fluxo completo permanece pendente de um token em arquivo de
+escopo mínimo. O corpus
+adversarial inicial está documentado em
+[avaliacao-adversarial-fase4.md](avaliacao-adversarial-fase4.md).

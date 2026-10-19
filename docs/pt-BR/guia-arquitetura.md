@@ -1,6 +1,6 @@
 # Guia de arquitetura — estado atual
 
-Este guia descreve a arquitetura implementada até o quarto incremento da Fase 4. O histórico das
+Este guia descreve a arquitetura implementada até o primeiro incremento da Fase 5. O histórico das
 decisões permanece nos ADRs e nos documentos de cada fase.
 
 ## Visão geral
@@ -8,6 +8,7 @@ decisões permanece nos ADRs e nos documentos de cada fase.
 ```mermaid
 flowchart LR
     C[Cliente HTTP] --> API[FastAPI]
+    API --> OT[OpenTelemetry / OTLP]
     API --> O[AIEngineeringOrchestrator]
     O --> A[Agentes especializados]
     O --> K[KnowledgeService]
@@ -21,6 +22,7 @@ flowchart LR
     S --> D[Servidor simulado]
     API --> EC[EvidenceExecutionService]
     EC --> GH[GitHub Tree e Contents APIs]
+    EC --> CP[Provedor de credencial escopada]
     EC --> CG[Guard + redaction]
     CG --> CB[Contexto limitado + citações]
     EC --> O
@@ -130,6 +132,26 @@ O `EvidenceContextBuilder` aceita somente conteúdo aprovado, aplica orçamento 
 e gera citações estáveis. O orquestrador registra as URLs em `evidence_sources` e, quando o LLM está
 habilitado, apresenta os trechos como dados externos não confiáveis separados das instruções.
 
+Para o piloto privado, `FileGitHubTokenProvider` lê um secret montado em arquivo e somente retorna o
+token quando o repositório solicitado coincide com o escopo configurado. O cabeçalho de autenticação
+é criado na borda HTTP e nunca entra em `TaskRequest`, `Execution`, logs ou contexto do LLM. A
+ausência de credencial interrompe a operação antes da chamada externa.
+
+Cada tentativa de coleta gera um `EvidenceAccessAudit`. A tabela `evidence_access_audits` registra
+estado, projeto, visibilidade, uso de autenticação, revisão e execução associada. Negações e falhas
+também são persistidas, mas tokens, cabeçalhos e conteúdo dos arquivos não fazem parte do contrato.
+
+## Observabilidade
+
+A API é instrumentada com OpenTelemetry e aceita exportação OTLP/HTTP opcional. Toda resposta
+recebe um `X-Request-ID` UUID; identificadores ausentes ou inválidos são substituídos. Com telemetria
+ativa, `X-Trace-ID` permite localizar o trace correspondente. Logs de execução incluem os IDs de
+requisição, trace e execução, sem adicionar prompt, conteúdo de evidência ou credenciais aos spans.
+
+Métricas HTTP e de execuções são expostas em `/metrics`. Método, rota normalizada, status, origem e
+estado são os únicos rótulos; dados por projeto ou execução não entram nas séries. O overlay
+`compose.observability.yaml` adiciona Prometheus com armazenamento efêmero para laboratório.
+
 ## Governança e segurança
 
 - leitura é o padrão;
@@ -139,6 +161,7 @@ habilitado, apresenta os trechos como dados externos não confiáveis separados 
 - conteúdo RAG é tratado como dado não confiável;
 - evidência textual é opt-in, limitada, higienizada e colocada em quarentena quando suspeita;
 - credenciais não são incluídas na imagem nem no repositório;
+- credenciais GitHub privadas são escopadas por repositório e preferencialmente montadas como secret;
 - containers executam sem root, sem capabilities e com filesystem somente leitura.
 
 ## Configuração e migrações
@@ -148,9 +171,11 @@ habilitado, apresenta os trechos como dados externos não confiáveis separados 
 | Limites da aplicação | `.env.example` e `infrastructure/settings.py` |
 | Política Git | `configs/policies/git-governance.yaml` |
 | Escopo e allowlist MCP | `configs/projects/*.yaml` |
+| Secret local do piloto privado | `compose.private.yaml` + arquivo externo |
 | Conhecimento | `migrations/001_phase2_knowledge.sql` |
 | Execuções | `migrations/002_phase2_executions.sql` |
 | Auditoria MCP | `migrations/003_phase2_mcp_audit.sql` |
+| Auditoria de evidências | `migrations/004_phase4_evidence_audit.sql` |
 
 As tabelas incrementais também são criadas idempotentemente pelos repositórios para atualizar um
 volume local existente sem exigir sua remoção.
@@ -168,6 +193,9 @@ volume local existente sem exigir sua remoção.
 - [ADR-003 — evidências públicas governadas](../architecture/ADR-003-governed-public-evidence.md)
 - [ADR-004 — conteúdo textual controlado](../architecture/ADR-004-controlled-text-evidence.md)
 - [ADR-005 — contexto citado](../architecture/ADR-005-cited-evidence-context.md)
+- [ADR-006 — acesso privado escopado](../architecture/ADR-006-scoped-private-repository-access.md)
+- [ADR-007 — observabilidade OpenTelemetry](../architecture/ADR-007-opentelemetry-observability.md)
+- [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
 - [Política de segurança](../../SECURITY.md)
@@ -176,5 +204,5 @@ volume local existente sem exigir sua remoção.
 
 Antes de habilitar servidores MCP reais serão necessários autenticação do aprovador, retomada
 durável de chamadas interrompidas, armazenamento seguro de credenciais, timeouts/retries de
-transporte, proteção contra SSRF e observabilidade distribuída. Embeddings de produção e medição
+transporte e proteção contra SSRF. Métricas, dashboards, alertas, embeddings de produção e medição
 oficial de custos também permanecem pendentes.
