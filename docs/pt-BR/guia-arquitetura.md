@@ -152,6 +152,11 @@ Métricas HTTP e de execuções são expostas em `/metrics`. Método, rota norma
 estado são os únicos rótulos; dados por projeto ou execução não entram nas séries. O overlay
 `compose.observability.yaml` adiciona Prometheus com armazenamento efêmero para laboratório.
 
+O overlay também provisiona o dashboard `aieo-overview` no Grafana e carrega regras Prometheus para
+indisponibilidade, taxa de erro 5xx e latência p95. Dashboard, datasource e alertas são arquivos
+versionados. O acesso anônimo `Viewer` é restrito ao laboratório local e não representa configuração
+de produção.
+
 ## Governança e segurança
 
 - leitura é o padrão;

@@ -76,7 +76,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    IDs de requisição validados e correlação com execução;
 2. **Métricas e coletor local — implementado.** Métricas HTTP e de execuções, endpoint Prometheus,
    overlay Compose e laboratório reproduzível;
-3. dashboards e alertas;
+3. **Dashboard e alertas — implementado localmente.** Grafana provisionado, painéis operacionais,
+   regras de disponibilidade, erros e latência, com validação por laboratório;
 4. API operacional com autenticação, autorização e quotas;
 5. interface React para solicitações, aprovações, fontes e histórico;
 6. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
@@ -88,7 +89,7 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. validar o laboratório de métricas e iniciar dashboards e alertas.
+4. validar dashboard e alertas e iniciar autenticação da API.
 
 ## Rastreabilidade
 
