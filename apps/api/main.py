@@ -54,6 +54,7 @@ from ai_engineering.knowledge.service import (
     KnowledgeService,
 )
 from ai_engineering.orchestrator.service import AIEngineeringOrchestrator
+from ai_engineering.security.api_access import APIAccessController
 from ai_engineering.security.content import KnowledgeContentGuard
 from ai_engineering.security.credentials import (
     FileGitHubTokenProvider,
@@ -64,6 +65,10 @@ from ai_engineering.security.secrets import SecretRedactor
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = structlog.get_logger()
+access_controller = APIAccessController.build(
+    settings.api_auth_enabled,
+    settings.api_keys_file,
+)
 repository = (
     PostgresExecutionRepository(settings.database_url)
     if settings.database_url
@@ -156,6 +161,7 @@ app = FastAPI(
     version="0.1.0",
     description="Fundação determinística e segura para fluxos multiagentes de engenharia.",
 )
+access_controller.install(app)
 telemetry = configure_telemetry(
     app,
     enabled=settings.telemetry_enabled,
@@ -164,6 +170,13 @@ telemetry = configure_telemetry(
     environment=settings.environment,
     otlp_endpoint=settings.otel_exporter_otlp_endpoint,
 )
+
+
+def authorize_project(project_id: str) -> None:
+    try:
+        access_controller.authorize_project(project_id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @app.get("/health", tags=["system"])
@@ -191,6 +204,7 @@ def list_agents() -> list[dict[str, str]]:
     tags=["executions"],
 )
 def create_execution(request: TaskRequest) -> Execution:
+    authorize_project(request.project_id)
     execution = orchestrator.execute(request)
     span = trace.get_current_span()
     span.set_attribute("execution.id", str(execution.id))
@@ -208,11 +222,13 @@ def create_execution(request: TaskRequest) -> Execution:
 
 @app.get("/v1/executions", response_model=list[Execution], tags=["executions"])
 def list_executions(project_id: str) -> list[Execution]:
+    authorize_project(project_id)
     return repository.list(project_id)
 
 
 @app.get("/v1/executions/{execution_id}", response_model=Execution, tags=["executions"])
 def get_execution(execution_id: UUID, project_id: str) -> Execution:
+    authorize_project(project_id)
     execution = repository.get(execution_id, project_id)
     if not execution:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
@@ -221,6 +237,7 @@ def get_execution(execution_id: UUID, project_id: str) -> Execution:
 
 @app.post("/v1/executions/{execution_id}/cancel", response_model=Execution, tags=["executions"])
 def cancel_execution(execution_id: UUID, project_id: str) -> Execution:
+    authorize_project(project_id)
     execution = orchestrator.cancel(execution_id, project_id)
     if not execution:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
@@ -234,6 +251,7 @@ def cancel_execution(execution_id: UUID, project_id: str) -> Execution:
     tags=["knowledge"],
 )
 def ingest_document(request: KnowledgeDocumentCreate) -> KnowledgeDocument:
+    authorize_project(request.project_id)
     try:
         return knowledge_service.ingest(request)
     except PermissionError as exc:
@@ -244,6 +262,7 @@ def ingest_document(request: KnowledgeDocumentCreate) -> KnowledgeDocument:
 
 @app.post("/v1/knowledge/search", response_model=list[SearchHit], tags=["knowledge"])
 def search_knowledge(request: KnowledgeSearchRequest) -> list[SearchHit]:
+    authorize_project(request.project_id)
     return knowledge_service.search(
         request.project_id, request.query, request.limit, request.include_shared
     )
@@ -251,12 +270,14 @@ def search_knowledge(request: KnowledgeSearchRequest) -> list[SearchHit]:
 
 @app.delete("/v1/knowledge/documents/{document_id}", status_code=204, tags=["knowledge"])
 def delete_document(document_id: UUID, project_id: str) -> None:
+    authorize_project(project_id)
     if not knowledge_repository.delete(document_id, project_id):
         raise HTTPException(status_code=404, detail="Documento não encontrado no projeto")
 
 
 @app.post("/v1/feedback", status_code=202, tags=["knowledge"])
 def create_feedback(request: FeedbackCreate) -> dict[str, str]:
+    authorize_project(request.project_id)
     knowledge_repository.add_feedback(request)
     return {"status": "accepted"}
 
@@ -286,16 +307,19 @@ def generate_with_llm(request: LLMGenerateRequest) -> dict[str, object]:
 
 @app.get("/v1/mcp/tools", response_model=list[MCPToolDefinition], tags=["mcp"])
 def list_mcp_tools(project_id: str) -> list[MCPToolDefinition]:
+    authorize_project(project_id)
     return mcp_gateway.list_tools(project_id)
 
 
 @app.post("/v1/mcp/invocations", response_model=MCPInvocation, tags=["mcp"])
 def invoke_mcp_tool(request: MCPInvocationRequest) -> MCPInvocation:
+    authorize_project(request.project_id)
     return mcp_gateway.invoke(request)
 
 
 @app.get("/v1/mcp/invocations", response_model=list[MCPInvocation], tags=["mcp"])
 def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
+    authorize_project(project_id)
     return mcp_audit_repository.list(project_id)
 
 
@@ -306,6 +330,7 @@ def list_mcp_invocations(project_id: str) -> list[MCPInvocation]:
     tags=["evidence"],
 )
 def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Execution:
+    authorize_project(request.project_id)
     try:
         execution = evidence_execution_service.execute(request)
         telemetry.record_execution(status=execution.status.value, source="evidence")
@@ -318,4 +343,5 @@ def create_execution_from_evidence(request: EvidenceExecutionRequest) -> Executi
 
 @app.get("/v1/evidence/audits", response_model=list[EvidenceAccessAudit], tags=["evidence"])
 def list_evidence_audits(project_id: str) -> list[EvidenceAccessAudit]:
+    authorize_project(project_id)
     return evidence_audit_repository.list(project_id)

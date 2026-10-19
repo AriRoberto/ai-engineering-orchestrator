@@ -1,0 +1,7 @@
+services:
+  api:
+    environment:
+      AIEO_API_AUTH_ENABLED: "true"
+      AIEO_API_KEYS_FILE: /run/secrets/api_keys
+    volumes:
+      - ${AIEO_API_KEYS_FILE_HOST:?Defina AIEO_API_KEYS_FILE_HOST}:/run/secrets/api_keys:ro
