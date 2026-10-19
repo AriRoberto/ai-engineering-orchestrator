@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso
 
 install:
 	python -m pip install -e '.[dev]'
@@ -45,4 +45,7 @@ eval-fase4:
 
 lab-fase5-observabilidade:
 	./scripts/laboratorio-fase5-observabilidade.sh
+
+lab-fase5-acesso:
+	./scripts/laboratorio-fase5-acesso.sh
 

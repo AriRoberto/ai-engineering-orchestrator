@@ -8,6 +8,8 @@
   em overlay Compose e laboratório reproduzível com rótulos de baixa cardinalidade.
 - Terceiro incremento da Fase 5 com dashboard Grafana provisionado, regras Prometheus para
   disponibilidade, erros e latência, além de validação automatizada por `promtool` e APIs locais.
+- Quarto incremento da Fase 5 com API keys armazenadas por hash, papéis de acesso, allowlist de
+  projetos, quotas por identidade e laboratório sem persistência de credenciais.
 
 - Fundação incremental da Fase 2: PostgreSQL/pgvector, ingestão documental, busca híbrida isolada
   por projeto, feedback persistente, provedor LLM simulado e adaptador opcional para OpenAI Agents SDK.

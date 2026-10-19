@@ -58,11 +58,34 @@ deve usar autenticação, TLS, persistência e canal de notificação gerenciado
 Em 19/10/2026, o laboratório validou as três regras com `promtool`, confirmou seu carregamento pela
 API do Prometheus e localizou o dashboard `aieo-overview` provisionado pela API do Grafana.
 
+## Incremento 4 — Autenticação, autorização e quotas
+
+Estado: concluído.
+
+Entregas:
+
+- API key obrigatória para `/v1` quando `AIEO_API_AUTH_ENABLED=true`;
+- arquivo secreto externo contendo apenas hashes SHA-256, nunca chaves em texto aberto;
+- papéis `viewer` e `operator`;
+- allowlist de projetos por identidade;
+- quota por minuto com resposta HTTP 429 e `Retry-After`;
+- falha de inicialização quando autenticação é ativada sem configuração válida;
+- laboratório reproduzível em `make lab-fase5-acesso`.
+
+O arquivo secreto contém `key_id`, `key_sha256`, `role`, `projects` e `requests_per_minute`. Gere o
+hash com `printf '%s' "$API_KEY" | shasum -a 256`, sem gravar a chave no repositório. O overlay
+`compose.access.yaml` monta o arquivo somente leitura. `/health`, `/metrics` e a documentação
+OpenAPI permanecem públicos; todos os endpoints `/v1` são protegidos.
+
+Em 19/10/2026, o laboratório confirmou health público, HTTP 401 sem credencial, HTTP 403 para papel
+ou projeto não autorizado, HTTP 429 após exceder a quota e ausência das chaves nas respostas. O
+contrato OpenAPI declara `X-API-Key` para as operações `/v1` quando o controle está habilitado.
+
 ## Próximos incrementos
 
 1. métricas de dependências e canal de notificação;
-2. autenticação, autorização e quotas da API;
-3. interface para histórico, fontes e aprovações;
-4. Kubernetes, SLOs e runbooks.
+2. interface para histórico, fontes e aprovações;
+3. Kubernetes, identidade federada, quotas distribuídas, SLOs e runbooks.
 
-Decisão arquitetural: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md).
+Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md) e
+[ADR-008](../architecture/ADR-008-api-access-control.md).

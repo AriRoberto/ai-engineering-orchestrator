@@ -78,7 +78,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    overlay Compose e laboratório reproduzível;
 3. **Dashboard e alertas — implementado localmente.** Grafana provisionado, painéis operacionais,
    regras de disponibilidade, erros e latência, com validação por laboratório;
-4. API operacional com autenticação, autorização e quotas;
+4. **API com acesso governado — implementado localmente.** API keys por arquivo secreto, papéis,
+   escopo de projetos e quota por identidade;
 5. interface React para solicitações, aprovações, fontes e histórico;
 6. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
 7. avaliação contínua, SLOs, runbooks e resposta a incidentes;
@@ -89,7 +90,7 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. validar dashboard e alertas e iniciar autenticação da API.
+4. validar controle de acesso e iniciar a interface operacional.
 
 ## Rastreabilidade
 
