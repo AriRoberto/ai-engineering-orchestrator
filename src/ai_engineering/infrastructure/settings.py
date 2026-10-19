@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     app_name: str = "AI Engineering Orchestrator"
     environment: str = "development"
     log_level: str = "INFO"
+    telemetry_enabled: bool = True
+    otel_service_name: str = "ai-engineering-orchestrator"
+    otel_exporter_otlp_endpoint: str | None = None
     demo_mode: bool = True
     max_steps: int = 12
     agent_timeout_seconds: float = 5.0

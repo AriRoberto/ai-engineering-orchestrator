@@ -23,7 +23,7 @@ Um incremento somente é considerado concluído quando possui:
 | 2 — Inteligência | Conhecimento, memória e integrações governadas | Concluída na fundação | PostgreSQL/pgvector, RAG, LLM, execuções persistentes e MCP governado |
 | 3 — Especialização | Diagnósticos por domínio | Concluída no escopo inicial | Database, QA, Security e Documentation Agents |
 | 4 — Pilotos | Evidência real com menor privilégio | Em andamento | Piloto público, conteúdo protegido e contexto com citações |
-| 5 — Produto | Experiência, observabilidade e operação | Planejada | UI, OpenTelemetry, Kubernetes, release e documentação oficial consolidada |
+| 5 — Produto | Experiência, observabilidade e operação | Iniciada | OpenTelemetry, correlação, UI, Kubernetes, release e documentação oficial consolidada |
 
 ## Fase 1 — Fundação
 
@@ -70,21 +70,23 @@ fontes, limites, identidade de acesso e testes adversariais documentados.
 
 ## Fase 5 — Produto e operação
 
-Planejada após o critério de saída da Fase 4:
+Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 
-1. OpenTelemetry para traces, métricas e correlação por execução;
-2. API operacional com autenticação, autorização e quotas;
-3. interface React para solicitações, aprovações, fontes e histórico;
-4. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
-5. avaliação contínua, SLOs, runbooks e resposta a incidentes;
-6. compilação da documentação oficial e release versionado.
+1. **OpenTelemetry e correlação — implementado localmente.** Traces HTTP, exportação OTLP opcional,
+   IDs de requisição validados e correlação com execução;
+2. métricas, coletor local, dashboards e alertas;
+3. API operacional com autenticação, autorização e quotas;
+4. interface React para solicitações, aprovações, fontes e histórico;
+5. manifests Kubernetes, probes, recursos, políticas e gestão de segredos;
+6. avaliação contínua, SLOs, runbooks e resposta a incidentes;
+7. compilação da documentação oficial e release versionado.
 
 ## Ordem imediata
 
 1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. iniciar observabilidade como primeiro incremento da Fase 5.
+4. validar traces e iniciar métricas como próximo incremento da Fase 5.
 
 ## Rastreabilidade
 
@@ -93,6 +95,7 @@ Planejada após o critério de saída da Fase 4:
 - [Laboratório da Fase 4](laboratorio-fase4.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
 - [Laboratório privado da Fase 4](laboratorio-fase4-privado.md)
+- [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [ADRs](../architecture/)
 - [Histórico de alterações](../../CHANGELOG.md)
 - [Política de segurança](../../SECURITY.md)

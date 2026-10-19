@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi.testclient import TestClient
 
 from apps.api import main as api_main
@@ -10,6 +12,18 @@ def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
+    assert UUID(response.headers["X-Request-ID"])
+    assert len(response.headers["X-Trace-ID"]) == 32
+
+
+def test_request_id_is_propagated_only_when_valid() -> None:
+    request_id = "fe744f62-3858-41db-a1a1-b8a32805db54"
+    propagated = client.get("/health", headers={"X-Request-ID": request_id})
+    replaced = client.get("/health", headers={"X-Request-ID": "unsafe-value"})
+
+    assert propagated.headers["X-Request-ID"] == request_id
+    assert replaced.headers["X-Request-ID"] != "unsafe-value"
+    assert UUID(replaced.headers["X-Request-ID"])
 
 
 def test_demo_execution() -> None:

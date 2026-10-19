@@ -1,6 +1,6 @@
 # Guia de arquitetura — estado atual
 
-Este guia descreve a arquitetura implementada até o quinto incremento da Fase 4. O histórico das
+Este guia descreve a arquitetura implementada até o primeiro incremento da Fase 5. O histórico das
 decisões permanece nos ADRs e nos documentos de cada fase.
 
 ## Visão geral
@@ -8,6 +8,7 @@ decisões permanece nos ADRs e nos documentos de cada fase.
 ```mermaid
 flowchart LR
     C[Cliente HTTP] --> API[FastAPI]
+    API --> OT[OpenTelemetry / OTLP]
     API --> O[AIEngineeringOrchestrator]
     O --> A[Agentes especializados]
     O --> K[KnowledgeService]
@@ -140,6 +141,13 @@ Cada tentativa de coleta gera um `EvidenceAccessAudit`. A tabela `evidence_acces
 estado, projeto, visibilidade, uso de autenticação, revisão e execução associada. Negações e falhas
 também são persistidas, mas tokens, cabeçalhos e conteúdo dos arquivos não fazem parte do contrato.
 
+## Observabilidade
+
+A API é instrumentada com OpenTelemetry e aceita exportação OTLP/HTTP opcional. Toda resposta
+recebe um `X-Request-ID` UUID; identificadores ausentes ou inválidos são substituídos. Com telemetria
+ativa, `X-Trace-ID` permite localizar o trace correspondente. Logs de execução incluem os IDs de
+requisição, trace e execução, sem adicionar prompt, conteúdo de evidência ou credenciais aos spans.
+
 ## Governança e segurança
 
 - leitura é o padrão;
@@ -182,6 +190,8 @@ volume local existente sem exigir sua remoção.
 - [ADR-004 — conteúdo textual controlado](../architecture/ADR-004-controlled-text-evidence.md)
 - [ADR-005 — contexto citado](../architecture/ADR-005-cited-evidence-context.md)
 - [ADR-006 — acesso privado escopado](../architecture/ADR-006-scoped-private-repository-access.md)
+- [ADR-007 — observabilidade OpenTelemetry](../architecture/ADR-007-opentelemetry-observability.md)
+- [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
 - [Política de segurança](../../SECURITY.md)
@@ -190,5 +200,5 @@ volume local existente sem exigir sua remoção.
 
 Antes de habilitar servidores MCP reais serão necessários autenticação do aprovador, retomada
 durável de chamadas interrompidas, armazenamento seguro de credenciais, timeouts/retries de
-transporte, proteção contra SSRF e observabilidade distribuída. Embeddings de produção e medição
+transporte e proteção contra SSRF. Métricas, dashboards, alertas, embeddings de produção e medição
 oficial de custos também permanecem pendentes.

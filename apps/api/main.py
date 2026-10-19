@@ -2,6 +2,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import FastAPI, HTTPException, status
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from ai_engineering.agents.specialists import default_agents
@@ -23,6 +24,7 @@ from ai_engineering.evidence.models import EvidenceExecutionRequest
 from ai_engineering.evidence.service import EvidenceExecutionService
 from ai_engineering.infrastructure.logging import configure_logging
 from ai_engineering.infrastructure.settings import get_settings
+from ai_engineering.infrastructure.telemetry import configure_telemetry, current_trace_id
 from ai_engineering.integrations.llm.base import LLMRequest
 from ai_engineering.integrations.llm.providers import build_llm_provider
 from ai_engineering.integrations.mcp.client import SimulatedProjectMCPClient
@@ -153,6 +155,13 @@ app = FastAPI(
     version="0.1.0",
     description="Fundação determinística e segura para fluxos multiagentes de engenharia.",
 )
+configure_telemetry(
+    app,
+    enabled=settings.telemetry_enabled,
+    service_name=settings.otel_service_name,
+    environment=settings.environment,
+    otlp_endpoint=settings.otel_exporter_otlp_endpoint,
+)
 
 
 @app.get("/health", tags=["system"])
@@ -176,10 +185,15 @@ def list_agents() -> list[dict[str, str]]:
 )
 def create_execution(request: TaskRequest) -> Execution:
     execution = orchestrator.execute(request)
+    span = trace.get_current_span()
+    span.set_attribute("execution.id", str(execution.id))
+    span.set_attribute("execution.project_id", execution.request.project_id)
+    span.set_attribute("execution.status", execution.status.value)
     logger.info(
         "execution_processed",
         execution_id=str(execution.id),
         execution_status=execution.status.value,
+        trace_id=current_trace_id(),
     )
     return execution
 

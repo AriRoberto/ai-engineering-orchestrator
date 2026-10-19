@@ -10,8 +10,8 @@
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
 Fase 1 entregou o backend e o modo demo. A Fase 2 já incorporou conhecimento persistente, RAG,
-contrato de LLM, memória de execuções e um gateway MCP governado. A Fase 3 iniciou a especialização
-com quatro novos agentes; recursos futuros continuam identificados explicitamente no roadmap.
+contrato de LLM, memória de execuções e um gateway MCP governado. A Fase 3 adicionou quatro agentes,
+a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade distribuída.
 
 ## Proposta de valor
 
@@ -38,7 +38,8 @@ com quatro novos agentes; recursos futuros continuam identificados explicitament
 | Evidências reais do piloto público | Implementado — conteúdo controlado e contexto citado |
 | Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
 | Piloto privado autenticado | Implementação local — validação real pendente de credencial somente leitura |
-| React UI, OpenTelemetry e Kubernetes | Planejado — Fase 5 |
+| OpenTelemetry e correlação HTTP | Implementado — primeiro incremento da Fase 5 |
+| React UI e Kubernetes | Planejado — Fase 5 |
 
 ## Arquitetura
 
@@ -157,6 +158,10 @@ Piloto público da Fase 4:
 - [Avaliação adversarial da Fase 4](docs/pt-BR/avaliacao-adversarial-fase4.md)
 - [Laboratório privado somente leitura](docs/pt-BR/laboratorio-fase4-privado.md)
 
+Produto e operação da Fase 5:
+
+- [Observabilidade e próximos incrementos](docs/pt-BR/fase-5-produto-operacao.md)
+
 ## Exemplo de uso
 
 ```bash
@@ -236,7 +241,8 @@ O detalhamento oficial, critérios de conclusão e ordem dos incrementos estão 
    integrados aos estados das evidências coletadas.
 4. **Pilotos:** inventário, conteúdo controlado, contexto citado e corpus adversarial inicial do
    piloto público implementados; acesso autenticado ao piloto privado permanece pendente.
-5. **Produto:** React, observabilidade, Kubernetes, documentação completa e release.
+5. **Produto:** correlação e traces implementados; métricas, React, Kubernetes, documentação
+   consolidada e release seguem incrementalmente.
 
 ## Contribuição, licença e contato
 
