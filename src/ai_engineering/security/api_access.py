@@ -198,7 +198,7 @@ class APIAccessController:
 
     @staticmethod
     def _is_public(path: str) -> bool:
-        return path in {"/health", "/metrics", "/openapi.json"} or path.startswith(
+        return path in {"/health", "/ready", "/metrics", "/openapi.json"} or path.startswith(
             ("/docs", "/redoc", "/ui")
         )
 

@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import SQLAlchemyError
 
 from apps.api import main as api_main
 from apps.api.main import app
@@ -14,6 +15,28 @@ def test_health() -> None:
     assert response.json()["status"] == "healthy"
     assert UUID(response.headers["X-Request-ID"])
     assert len(response.headers["X-Trace-ID"]) == 32
+
+
+def test_readiness() -> None:
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+
+
+def test_readiness_reports_database_failure(monkeypatch) -> None:
+    class FailingEngine:
+        def connect(self):
+            raise SQLAlchemyError("database unavailable")
+
+    class FailingRepository:
+        engine = FailingEngine()
+
+    monkeypatch.setattr(api_main, "repository", FailingRepository())
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Banco de dados indisponível"
 
 
 def test_request_id_is_propagated_only_when_valid() -> None:
