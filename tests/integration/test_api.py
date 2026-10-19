@@ -60,6 +60,8 @@ def test_prometheus_metrics_include_http_and_execution_counters() -> None:
     assert response.headers["content-type"].startswith("text/plain")
     assert "aieo_http_server_requests_total" in response.text
     assert "aieo_http_server_duration_seconds" in response.text
+    assert 'aieo_http_server_duration_seconds_bucket{http_request_method="GET"' in response.text
+    assert 'le="2"' in response.text
     assert "aieo_executions_total" in response.text
     assert 'execution_source="direct"' in response.text
 
