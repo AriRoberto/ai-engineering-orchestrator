@@ -9,12 +9,36 @@ services:
       - "9090:9090"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/rules:/etc/prometheus/rules:ro
     depends_on:
       api:
         condition: service_started
     read_only: true
     tmpfs:
       - /prometheus:size=128m,mode=0755,uid=65534,gid=65534
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    ports:
+      - "${AIEO_GRAFANA_PORT:-3300}:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /var/lib/grafana:size=128m,mode=0755,uid=472,gid=0
+      - /var/log/grafana:size=32m,mode=0755,uid=472,gid=0
     security_opt:
       - no-new-privileges:true
     cap_drop:
