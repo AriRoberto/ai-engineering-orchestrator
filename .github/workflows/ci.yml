@@ -24,5 +24,6 @@ jobs:
       - run: ruff check .
       - run: python -m pytest
       - run: ./scripts/laboratorio-fase5-kubernetes.sh
+      - run: python scripts/validar-release.py
       - run: docker build -t ai-engineering-orchestrator:${{ github.sha }} .
 

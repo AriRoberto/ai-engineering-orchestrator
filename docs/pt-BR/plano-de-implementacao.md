@@ -23,7 +23,7 @@ Um incremento somente é considerado concluído quando possui:
 | 2 — Inteligência | Conhecimento, memória e integrações governadas | Concluída na fundação | PostgreSQL/pgvector, RAG, LLM, execuções persistentes e MCP governado |
 | 3 — Especialização | Diagnósticos por domínio | Concluída no escopo inicial | Database, QA, Security e Documentation Agents |
 | 4 — Pilotos | Evidência real com menor privilégio | Em andamento | Piloto público, conteúdo protegido e contexto com citações |
-| 5 — Produto | Experiência, observabilidade e operação | Iniciada | OpenTelemetry, correlação, UI, Kubernetes, release e documentação oficial consolidada |
+| 5 — Produto | Experiência, observabilidade e operação | Concluída no escopo local | OpenTelemetry, UI, Kubernetes, SLOs, release e documentação oficial |
 
 ## Fase 1 — Fundação
 
@@ -86,7 +86,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    políticas, migração e referências externas de segredos; validação em cluster pendente;
 7. **SLOs e resposta a incidentes — implementados localmente.** Recording rules, burn rate,
    dashboard, severidades e runbooks; calibração em homologação pendente;
-8. compilação da documentação oficial e release versionado.
+8. **Documentação oficial e release — concluídas em `develop`.** Versão 0.2.0, documento
+   consolidado, checklist e gate automatizado; promoção para `main` pendente.
 
 ## Ordem imediata
 
@@ -94,8 +95,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
 4. provisionar homologação e validar imagem, migração, rede, probes e rollback no cluster;
-5. configurar identidade federada, quotas distribuídas e canal gerenciado de notificação;
-6. executar a validação de release e promover `develop` para `main` em um único PR.
+5. executar o gate final e promover `develop` para `main` em um único PR;
+6. após a release, configurar identidade federada, quotas distribuídas e notificação gerenciada.
 
 ## Rastreabilidade
 
@@ -105,6 +106,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
 - [Laboratório privado da Fase 4](laboratorio-fase4-privado.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
+- [Documentação oficial 0.2.0](documentacao-oficial.md)
+- [Checklist da release 0.2.0](release-0.2.0.md)
 - [ADRs](../architecture/)
 - [Histórico de alterações](../../CHANGELOG.md)
 - [Política de segurança](../../SECURITY.md)

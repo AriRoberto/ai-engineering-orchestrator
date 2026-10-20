@@ -15,7 +15,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: migrate
-          image: ghcr.io/ariroberto/ai-engineering-orchestrator:0.1.0
+          image: ghcr.io/ariroberto/ai-engineering-orchestrator:0.2.0
           command: ["python", "-m", "ai_engineering.infrastructure.migrations"]
           env:
             - name: AIEO_DATABASE_URL
