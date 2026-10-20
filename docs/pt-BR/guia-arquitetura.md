@@ -243,6 +243,8 @@ volume local existente sem exigir sua remoção.
 - [ADR-011 — SLOs e resposta a incidentes](../architecture/ADR-011-slo-incident-response.md)
 - [Objetivos de nível de serviço](slo.md)
 - [Runbooks operacionais](runbooks/README.md)
+- [Documentação oficial 0.2.0](documentacao-oficial.md)
+- [Checklist da release 0.2.0](release-0.2.0.md)
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Plano oficial de implementação](plano-de-implementacao.md)
 - [Avaliação adversarial da Fase 4](avaliacao-adversarial-fase4.md)
