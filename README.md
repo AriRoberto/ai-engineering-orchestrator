@@ -7,6 +7,10 @@
 
 > Fundação segura e extensível para coordenar agentes especializados em engenharia de software.
 
+Versão candidata atual: **0.2.0**. Consulte a
+[documentação oficial](docs/pt-BR/documentacao-oficial.md) e o
+[checklist de release](docs/pt-BR/release-0.2.0.md).
+
 O AI Engineering Orchestrator transforma solicitações técnicas em planos auditáveis, seleciona
 especialistas e consolida diagnósticos sob políticas de menor privilégio e aprovação humana. A
 Fase 1 entregou o backend e o modo demo. A Fase 2 já incorporou conhecimento persistente, RAG,

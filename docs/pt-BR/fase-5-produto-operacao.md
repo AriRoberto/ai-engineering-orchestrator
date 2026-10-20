@@ -142,11 +142,25 @@ Em 19/10/2026, o `promtool` validou onze regras, o dashboard passou pela valida�
 laboratório foi ampliado para verificar o carregamento dos SLIs e alertas de burn rate. Os objetivos
 são internos e deverão ser calibrados após histórico de homologação.
 
+## Incremento 8 — Documentação oficial e release
+
+Estado: concluído em `develop`; promoção para `main` pendente.
+
+Entregas:
+
+- versão 0.2.0 consistente no pacote Python, API, UI e manifests;
+- documentação oficial consolidada com operação, segurança e limites;
+- checklist de promoção com evidências e pendências externas explícitas;
+- gate automatizado de versões, arquivos estruturados e links Markdown;
+- gate executado pelo CI e disponível em `make validar-release`;
+- estratégia de promoção única de `develop` para `main`.
+
 ## Próximos incrementos
 
-1. métricas de dependências e canal gerenciado de notificação;
-2. identidade federada e quotas distribuídas;
-3. validar Kubernetes e SLOs em homologação, com imagem fixada por digest.
+1. aprovar e promover a release 0.2.0 de `develop` para `main`;
+2. criar a tag `v0.2.0` após o merge;
+3. métricas de dependências, notificação gerenciada, identidade federada e quotas distribuídas;
+4. validar Kubernetes, SLOs e piloto privado nos ambientes externos correspondentes.
 
 Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),
 [ADR-008](../architecture/ADR-008-api-access-control.md) e

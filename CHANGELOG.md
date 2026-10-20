@@ -2,6 +2,10 @@
 
 ## Não lançado
 
+## [0.2.0] - 2026-10-20
+
+- Consolida a documentação oficial, o checklist e o gate automatizado da release 0.2.0.
+
 - Primeiro incremento da Fase 5 com instrumentação OpenTelemetry da API, exportação OTLP/HTTP
   opcional, IDs de requisição validados e correlação entre resposta, trace, logs e execução.
 - Segundo incremento da Fase 5 com métricas HTTP e de execuções, endpoint Prometheus, coletor local
