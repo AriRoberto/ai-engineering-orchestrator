@@ -5,6 +5,9 @@
 - Concluída a Fase 4 após validação real do piloto privado `app-ams` com token fine-grained
   temporário e somente leitura, coleta exclusiva de metadados, auditoria persistente e confirmação
   de que a credencial não integra a resposta pública.
+- Adicionado ambiente Kubernetes local reproduzível com kind, PostgreSQL/pgvector efêmero, secrets
+  externos, migração, probes, autenticação, pilotos público e privado, rollout e rollback; a
+  validação real corrigiu a identidade numérica não-root e as permissões dos volumes de Secret.
 
 ## [0.2.0] - 2026-10-20
 
