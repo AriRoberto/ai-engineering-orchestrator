@@ -5,7 +5,7 @@ default_branch: main
 visibility: private
 mode: read-only
 knowledge_namespace: project/app-ams
-verification_status: repository_metadata_verified_private_lab_pending
+verification_status: private_read_only_lab_validated
 authenticated_read_only: true
 mcp:
   allowed_tools:

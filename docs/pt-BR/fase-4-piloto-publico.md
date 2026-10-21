@@ -104,9 +104,8 @@ de um registro `DENIED` para a tentativa privada sem credencial.
 ## Estado do piloto privado
 
 O acesso autenticado somente leitura está integrado ao transporte GitHub, com credencial em arquivo
-secreto para Compose e escopo por repositório. A validação automatizada usa transporte simulado;
-a identidade privada, visibilidade e branch `main` do repositório foram confirmadas em 16/10/2026
-pela sessão GitHub local. A validação do fluxo completo permanece pendente de um token em arquivo de
-escopo mínimo. O corpus
-adversarial inicial está documentado em
+secreto para Compose e escopo por repositório. Em 20/10/2026, o fluxo completo foi validado contra
+`AriRoberto/app-ams` com token fine-grained temporário, restrito ao repositório e somente leitura.
+O laboratório confirmou metadados, autenticação, auditoria persistente e não exposição da
+credencial. O corpus adversarial inicial está documentado em
 [avaliacao-adversarial-fase4.md](avaliacao-adversarial-fase4.md).

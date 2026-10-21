@@ -8,9 +8,10 @@ O AI Engineering Orchestrator recebe uma solicitação de engenharia, cria um pl
 seleciona especialistas e preserva execução, evidências, fontes e decisões. O núcleo é determinístico:
 LLMs podem sugerir conteúdo, mas não concedem permissões nem ignoram políticas.
 
-A versão 0.2.0 consolida a fundação das fases 1 a 3, o piloto público governado da Fase 4 e o escopo
-local de produto e operação da Fase 5. O piloto privado, identidade federada e homologação em
-Kubernetes dependem de infraestrutura externa e não são declarados concluídos.
+A versão 0.2.0 consolida a fundação das fases 1 a 3, os pilotos governados da Fase 4 e o escopo local
+de produto e operação da Fase 5. O piloto privado foi validado após a publicação da tag, com
+credencial temporária somente leitura; identidade federada e homologação em Kubernetes continuam
+dependentes de infraestrutura adicional.
 
 ## Capacidades entregues
 
@@ -74,7 +75,8 @@ gate completo. Branches temporárias são apagadas depois do merge.
 
 ## Limites conhecidos
 
-- o piloto privado requer credencial GitHub real somente leitura para validação externa;
+- novas execuções do piloto privado requerem uma credencial GitHub temporária, escopada e somente
+  leitura; a validação operacional inicial foi concluída em 20/10/2026;
 - API keys e quotas são locais por réplica; produção requer identidade federada e quota distribuída;
 - o Prometheus local retém 24 horas, menos que a janela de SLO de 30 dias;
 - o Kubernetes base não inclui cluster, registry, PostgreSQL, Ingress, TLS ou secret manager;
