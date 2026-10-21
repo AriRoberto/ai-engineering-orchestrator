@@ -2,6 +2,10 @@
 
 ## Não lançado
 
+- Concluída a Fase 4 após validação real do piloto privado `app-ams` com token fine-grained
+  temporário e somente leitura, coleta exclusiva de metadados, auditoria persistente e confirmação
+  de que a credencial não integra a resposta pública.
+
 ## [0.2.0] - 2026-10-20
 
 - Consolida a documentação oficial, o checklist e o gate automatizado da release 0.2.0.
@@ -43,8 +47,7 @@
 - Quarto incremento da Fase 4 com corpus adversarial versionado, métricas por categoria, limiar de
   aprovação, normalização contra evasões simples e validação de citações, hashes, origem e orçamento.
 - Implementação local do piloto privado somente leitura com credencial GitHub em arquivo secreto,
-  escopo por repositório, falha fechada e laboratório Compose; validação contra o repositório real
-  ainda pendente.
+  escopo por repositório, falha fechada e laboratório Compose.
 - Auditoria persistente de acessos a evidências, incluindo conclusões, negações e falhas isoladas
   por projeto, sem armazenamento de credenciais.
 
