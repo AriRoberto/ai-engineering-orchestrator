@@ -70,7 +70,7 @@ fontes, limites, identidade de acesso e testes adversariais documentados.
 
 ## Fase 5 — Produto e operação
 
-Iniciada de forma incremental, sem declarar encerrada a Fase 4:
+Concluída no escopo local, sem declarar encerrada a Fase 4:
 
 1. **OpenTelemetry e correlação — implementado localmente.** Traces HTTP, exportação OTLP opcional,
    IDs de requisição validados e correlação com execução;
@@ -86,8 +86,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
    políticas, migração e referências externas de segredos; validação em cluster pendente;
 7. **SLOs e resposta a incidentes — implementados localmente.** Recording rules, burn rate,
    dashboard, severidades e runbooks; calibração em homologação pendente;
-8. **Documentação oficial e release — concluídas em `develop`.** Versão 0.2.0, documento
-   consolidado, checklist e gate automatizado; promoção para `main` pendente.
+8. **Documentação oficial e release — concluídas.** Versão 0.2.0, documento consolidado,
+   checklist e gate automatizado promovidos para `main`; tag `v0.2.0` publicada.
 
 ## Ordem imediata
 
@@ -95,8 +95,8 @@ Iniciada de forma incremental, sem declarar encerrada a Fase 4:
 2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
 3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
 4. provisionar homologação e validar imagem, migração, rede, probes e rollback no cluster;
-5. executar o gate final e promover `develop` para `main` em um único PR;
-6. após a release, configurar identidade federada, quotas distribuídas e notificação gerenciada.
+5. configurar identidade federada, quotas distribuídas e notificação gerenciada;
+6. definir o próximo ciclo após consolidar as evidências dos testes locais e externos.
 
 ## Rastreabilidade
 
