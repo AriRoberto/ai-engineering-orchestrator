@@ -22,7 +22,7 @@ Um incremento somente é considerado concluído quando possui:
 | 1 — Fundação | API, orquestração e governança básica | Concluída | FastAPI, oito estados, agentes iniciais, Docker, CI e governança Git |
 | 2 — Inteligência | Conhecimento, memória e integrações governadas | Concluída na fundação | PostgreSQL/pgvector, RAG, LLM, execuções persistentes e MCP governado |
 | 3 — Especialização | Diagnósticos por domínio | Concluída no escopo inicial | Database, QA, Security e Documentation Agents |
-| 4 — Pilotos | Evidência real com menor privilégio | Em andamento | Piloto público, conteúdo protegido e contexto com citações |
+| 4 — Pilotos | Evidência real com menor privilégio | Concluída | Pilotos público e privado somente leitura, conteúdo protegido, contexto citado e auditoria |
 | 5 — Produto | Experiência, observabilidade e operação | Concluída no escopo local | OpenTelemetry, UI, Kubernetes, SLOs, release e documentação oficial |
 
 ## Fase 1 — Fundação
@@ -48,7 +48,7 @@ continuam determinísticos e não executam código externo. Evidências:
 
 ## Fase 4 — Pilotos
 
-Estado: em andamento.
+Estado: concluída em 20/10/2026.
 
 Incrementos:
 
@@ -61,16 +61,18 @@ Incrementos:
    como dado não confiável.
 4. **Avaliação adversarial — concluída no corpus inicial.** Prompt injection, evasões simples,
    redaction, integridade de citações e limiar de aprovação reproduzível.
-5. **Piloto privado somente leitura — implementação integrada; validação externa pendente.**
+5. **Piloto privado somente leitura — concluído.**
    Provedor de credencial em arquivo, escopo por repositório, transporte autenticado e laboratório
-   Compose; falta executar contra o GitHub com credencial real de escopo mínimo.
+   Compose validados contra `AriRoberto/app-ams` com credencial temporária de escopo mínimo. A
+   execução confirmou coleta exclusiva de metadados, auditoria persistente e ausência da credencial
+   na resposta pública.
 
-Critério de saída da Fase 4: os dois pilotos produzem diagnósticos rastreáveis sem escrita, com
-fontes, limites, identidade de acesso e testes adversariais documentados.
+Critério de saída da Fase 4: alcançado. Os dois pilotos produzem diagnósticos rastreáveis sem
+escrita, com fontes, limites, identidade de acesso e testes adversariais documentados.
 
 ## Fase 5 — Produto e operação
 
-Concluída no escopo local, sem declarar encerrada a Fase 4:
+Concluída no escopo local:
 
 1. **OpenTelemetry e correlação — implementado localmente.** Traces HTTP, exportação OTLP opcional,
    IDs de requisição validados e correlação com execução;
@@ -91,12 +93,11 @@ Concluída no escopo local, sem declarar encerrada a Fase 4:
 
 ## Ordem imediata
 
-1. configurar uma credencial GitHub de curta duração e escopo mínimo para `app-ams`;
-2. executar o laboratório privado e registrar a validação sem persistir nem compartilhar a credencial;
-3. encerrar a Fase 4 somente após confirmar os critérios de saída dos dois pilotos;
-4. provisionar homologação e validar imagem, migração, rede, probes e rollback no cluster;
-5. configurar identidade federada, quotas distribuídas e notificação gerenciada;
-6. definir o próximo ciclo após consolidar as evidências dos testes locais e externos.
+1. provisionar um cluster local para validar imagem, migração, rede, probes e rollback sem depender
+   de homologação externa;
+2. executar os laboratórios integrados dos projetos piloto nesse ambiente local;
+3. configurar identidade federada, quotas distribuídas e notificação gerenciada antes de produção;
+4. definir o próximo ciclo após consolidar as evidências dos testes locais e externos.
 
 ## Rastreabilidade
 

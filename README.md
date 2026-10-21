@@ -41,7 +41,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Database, QA, Security e Documentation Agents | Implementado — primeiro incremento da Fase 3 |
 | Evidências reais do piloto público | Implementado — conteúdo controlado e contexto citado |
 | Avaliação adversarial de evidências | Implementado — corpus inicial com limiar de 100% |
-| Piloto privado autenticado | Implementação local — validação real pendente de credencial somente leitura |
+| Piloto privado autenticado | Validado contra `app-ams` com credencial temporária somente leitura |
 | OpenTelemetry e correlação HTTP | Implementado — primeiro incremento da Fase 5 |
 | Métricas e coletor Prometheus | Implementado — segundo incremento da Fase 5 |
 | Dashboard Grafana e alertas Prometheus | Implementado — terceiro incremento da Fase 5 |
@@ -249,7 +249,8 @@ A CI repete lint, testes e build do container em pushes e pull requests para `ma
 ## Projetos pilotos
 
 - `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.
-- `AriRoberto/app-ams`: privado; a coleta autenticada somente leitura está implementada, mas depende de credencial local e não é executada sem ela.
+- `AriRoberto/app-ams`: privado; coleta autenticada somente leitura validada com credencial
+  temporária, exigida somente durante novas execuções do laboratório.
 
 Nenhum piloto é modificado na Fase 1.
 
@@ -263,8 +264,8 @@ O detalhamento oficial, critérios de conclusão e ordem dos incrementos estão 
    oficiais, embeddings de produção e transportes MCP reais permanecem em evolução.
 3. **Especialização:** agentes de Banco de Dados, QA, Segurança e Documentação implementados e
    integrados aos estados das evidências coletadas.
-4. **Pilotos:** inventário, conteúdo controlado, contexto citado e corpus adversarial inicial do
-   piloto público implementados; acesso autenticado ao piloto privado permanece pendente.
+4. **Pilotos:** inventário, conteúdo controlado, contexto citado, corpus adversarial e acesso
+   autenticado somente leitura ao piloto privado concluídos.
 5. **Produto:** correlação, métricas, interface React, Kubernetes, SLOs e runbooks implementados;
    identidade federada, documentação consolidada e release seguem incrementalmente.
 

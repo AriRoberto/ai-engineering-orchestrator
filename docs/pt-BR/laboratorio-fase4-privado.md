@@ -59,3 +59,19 @@ Credencial ausente resulta em HTTP 403; erros de acesso ao GitHub não usam dado
 O laboratório requer uma credencial válida e acesso real ao projeto. Testes automatizados com
 transporte simulado não substituem essa validação; não registre o token, a resposta de autenticação
 ou conteúdo privado em logs, issues ou relatórios.
+
+## Evidência de execução
+
+Em 20/10/2026, o laboratório foi executado contra `AriRoberto/app-ams` com um token fine-grained
+temporário, restrito ao repositório e com acesso somente de leitura a código e metadados. A
+validação confirmou:
+
+- autenticação real na API do GitHub e identificação do repositório como privado;
+- coleta exclusivamente de metadados na branch configurada;
+- evidência marcada como autenticada e somente leitura;
+- auditoria persistente vinculada à execução;
+- ausência de cabeçalhos, marcadores ou valor da credencial na resposta pública;
+- desmontagem do secret e encerramento dos containers após o teste.
+
+O valor da credencial não foi registrado. Somente o resultado sanitizado do laboratório compõe a
+evidência do projeto. Com essa execução, o critério do piloto privado e a Fase 4 foram concluídos.
