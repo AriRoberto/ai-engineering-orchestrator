@@ -84,8 +84,9 @@ Concluída no escopo local:
    escopo de projetos e quota por identidade;
 5. **Interface operacional React — implementada localmente.** Histórico, fontes, auditorias e
    aprovações MCP integradas à API governada;
-6. **Implantação Kubernetes — implementada localmente.** Base Kustomize, probes, recursos,
-   políticas, migração e referências externas de segredos; validação em cluster pendente;
+6. **Implantação Kubernetes — validada em cluster local.** Base e overlay Kustomize, identidade
+   não-root numérica, secrets efêmeros, PostgreSQL/pgvector, migração, probes, políticas, pilotos,
+   rollout e rollback validados em kind;
 7. **SLOs e resposta a incidentes — implementados localmente.** Recording rules, burn rate,
    dashboard, severidades e runbooks; calibração em homologação pendente;
 8. **Documentação oficial e release — concluídas.** Versão 0.2.0, documento consolidado,
@@ -93,9 +94,8 @@ Concluída no escopo local:
 
 ## Ordem imediata
 
-1. provisionar um cluster local para validar imagem, migração, rede, probes e rollback sem depender
-   de homologação externa;
-2. executar os laboratórios integrados dos projetos piloto nesse ambiente local;
+1. consolidar os laboratórios locais em um gate de regressão único;
+2. preparar um perfil de homologação com registry, persistência, Ingress, TLS e secret manager;
 3. configurar identidade federada, quotas distribuídas e notificação gerenciada antes de produção;
 4. definir o próximo ciclo após consolidar as evidências dos testes locais e externos.
 

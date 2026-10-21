@@ -47,7 +47,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Dashboard Grafana e alertas Prometheus | Implementado — terceiro incremento da Fase 5 |
 | Autenticação, autorização e quotas da API | Implementado — quarto incremento da Fase 5 |
 | Interface React operacional | Implementado — quinto incremento da Fase 5 |
-| Implantação Kubernetes | Base Kustomize implementada; validação em cluster pendente |
+| Implantação Kubernetes | Base segura e overlay kind validados em cluster local |
 | SLOs e resposta a incidentes | Implementados localmente; calibração em homologação pendente |
 
 ## Arquitetura
