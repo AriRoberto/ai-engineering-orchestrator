@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ai-engineering-orchestrator
+resources:
+  - ../../base
+  - postgres.yaml
+  - postgres-network-policy.yaml
+images:
+  - name: ghcr.io/ariroberto/ai-engineering-orchestrator
+    newName: ai-engineering-orchestrator
+    newTag: local
+replicas:
+  - name: orchestrator-api
+    count: 1
+patches:
+  - path: config-map-patch.yaml
+  - path: deployment-private-secret-patch.yaml
+  - path: migration-label-patch.yaml

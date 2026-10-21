@@ -106,7 +106,7 @@ cobertura.
 
 ## Incremento 6 — Implantação Kubernetes
 
-Estado: concluído localmente; implantação em cluster pendente.
+Estado: concluído e validado no cluster local `aieo-local` em 20/10/2026.
 
 Entregas:
 
@@ -117,11 +117,16 @@ Entregas:
 - Service interno, PodDisruptionBudget e NetworkPolicy;
 - segredos referenciados, nunca materializados nos manifests;
 - Job idempotente de migração usando a mesma imagem da aplicação;
-- laboratório estático reproduzível em `make lab-fase5-kubernetes`.
+- laboratório estático reproduzível em `make lab-fase5-kubernetes`;
+- overlay kind com PostgreSQL/pgvector efêmero, secrets externos, pilotos e rollback em
+  `make lab-kubernetes-local`.
 
 Em 19/10/2026, o laboratório renderizou oito recursos, confirmou os controles de menor privilégio,
-as referências externas de segredos, as probes, os limites e o Job de migração. A implantação real
-permanece dependente de cluster, registry, PostgreSQL, TLS e overlays da plataforma.
+as referências externas de segredos, as probes, os limites e o Job de migração. Em 20/10/2026, o
+cluster kind `aieo-local` confirmou migração, saúde, prontidão, autenticação, interface, pilotos
+público e privado, rollout e rollback. A execução real revelou e corrigiu a identidade não-root não
+numérica e a permissão de leitura dos volumes de Secret. Homologação e produção permanecem
+dependentes de registry, persistência, Ingress, TLS, secret manager e overlays da plataforma.
 
 ## Incremento 7 — SLOs e resposta a incidentes
 
@@ -158,7 +163,7 @@ Entregas:
 ## Próximos incrementos
 
 1. métricas de dependências, notificação gerenciada, identidade federada e quotas distribuídas;
-2. validar Kubernetes, SLOs e piloto privado nos ambientes externos correspondentes;
+2. validar Kubernetes e SLOs nos ambientes externos correspondentes;
 3. definir o escopo da próxima versão somente após registrar os resultados locais e externos.
 
 Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),

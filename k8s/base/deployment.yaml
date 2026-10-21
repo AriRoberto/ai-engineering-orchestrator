@@ -16,6 +16,10 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -74,4 +78,4 @@ spec:
         - name: api-keys
           secret:
             secretName: orchestrator-api-keys
-            defaultMode: 0400
+            defaultMode: 0440
