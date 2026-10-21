@@ -1,6 +1,6 @@
 # Release 0.2.0 — checklist de promoção
 
-Data candidata: 20/10/2026. Origem: `develop`. Destino: `main`.
+Publicada em 20/10/2026. Origem: `develop`. Destino: `main`. Tag: `v0.2.0`.
 
 ## Gate obrigatório
 
@@ -11,9 +11,9 @@ Data candidata: 20/10/2026. Origem: `develop`. Destino: `main`.
 - [x] regras Prometheus, dashboard e Kustomize validados;
 - [x] documentação oficial, segurança, arquitetura, ADRs e CHANGELOG atualizados;
 - [x] limitações externas declaradas;
-- [ ] CI do PR `develop → main` aprovado;
-- [ ] revisão exigida pela proteção da `main` aprovada;
-- [ ] tag `v0.2.0` criada somente depois do merge.
+- [x] CI do PR de promoção para `main` aprovado;
+- [x] promoção autorizada conforme a proteção da `main`;
+- [x] tag `v0.2.0` criada depois do merge.
 
 ## Evidências atuais
 
@@ -21,6 +21,7 @@ Data candidata: 20/10/2026. Origem: `develop`. Destino: `main`.
 - 11 regras Prometheus aprovadas pelo `promtool`;
 - laboratório Prometheus/Grafana e laboratório Kubernetes aprovados;
 - incrementos revisados individualmente nos PRs #1 a #15.
+- promoção concluída pelo PR #18 no commit `b63311d`.
 
 ## Pendências que não bloqueiam esta release local
 

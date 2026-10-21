@@ -1,6 +1,6 @@
 # AI Engineering Orchestrator — documentação oficial 0.2.0
 
-Estado da edição: candidata a release em 20/10/2026.
+Estado da edição: publicada como `v0.2.0` em 20/10/2026.
 
 ## Visão do produto
 
