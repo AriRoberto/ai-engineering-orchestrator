@@ -83,6 +83,9 @@ Renderize e revise antes de aplicar:
   --secret-store NOME-DO-CLUSTER-SECRET-STORE \
   --cluster-issuer NOME-DO-CLUSTER-ISSUER \
   --storage-class NOME-DA-STORAGE-CLASS \
+  --oidc-issuer https://seu-provedor-de-identidade.example/ \
+  --oidc-audience ai-engineering-orchestrator \
+  --oidc-jwks-url https://seu-provedor-de-identidade.example/.well-known/jwks.json \
   --output /tmp/aieo-staging.yaml
 kubectl diff -f /tmp/aieo-staging.yaml
 ```

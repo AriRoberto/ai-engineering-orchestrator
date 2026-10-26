@@ -4,6 +4,7 @@ import json
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from ai_engineering.security.api_access import (
     AccessRole,
@@ -11,6 +12,8 @@ from ai_engineering.security.api_access import (
     APIIdentity,
     APIKeyStore,
     FixedWindowQuota,
+    OIDCIdentityProvider,
+    RedisFixedWindowQuota,
 )
 
 
@@ -130,3 +133,93 @@ def test_middleware_enforces_auth_role_project_and_quota(tmp_path) -> None:
 def test_enabled_controller_requires_keys_file() -> None:
     with pytest.raises(ValueError, match="AIEO_API_KEYS_FILE"):
         APIAccessController.build(True, None)
+
+
+@pytest.mark.asyncio
+async def test_oidc_provider_maps_verified_claims(monkeypatch) -> None:
+    provider = OIDCIdentityProvider(
+        "https://identity.example/",
+        "aieo",
+        "https://identity.example/jwks.json",
+    )
+    monkeypatch.setattr(
+        provider,
+        "_decode",
+        lambda token: {
+            "sub": "user-123",
+            "aieo_role": "operator",
+            "aieo_projects": ["project-a"],
+            "aieo_requests_per_minute": 25,
+        },
+    )
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/v1/projects/project-a",
+            "headers": [(b"authorization", b"Bearer signed-token")],
+        }
+    )
+
+    identity = await provider.authenticate(request)
+
+    assert identity == APIIdentity(
+        "oidc:user-123", AccessRole.OPERATOR, frozenset({"project-a"}), 25
+    )
+
+
+@pytest.mark.asyncio
+async def test_oidc_provider_rejects_invalid_claims_and_credentials(monkeypatch) -> None:
+    provider = OIDCIdentityProvider(
+        "https://identity.example/",
+        "aieo",
+        "https://identity.example/jwks.json",
+    )
+    monkeypatch.setattr(provider, "_decode", lambda token: {"sub": "user-123"})
+    missing_bearer = Request(
+        {"type": "http", "method": "GET", "path": "/v1/projects", "headers": []}
+    )
+    invalid_claims = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/v1/projects",
+            "headers": [(b"authorization", b"Bearer signed-token")],
+        }
+    )
+
+    assert await provider.authenticate(missing_bearer) is None
+    assert await provider.authenticate(invalid_claims) is None
+
+
+@pytest.mark.asyncio
+async def test_redis_quota_uses_atomic_global_counter() -> None:
+    class FakeRedis:
+        async def eval(self, script, key_count, key, limit, ttl):
+            assert "INCR" in script
+            assert key_count == 1
+            assert key.startswith("aieo:quota:operator-lab:")
+            assert (limit, ttl) == (2, 65)
+            return [0, 41]
+
+    quota = RedisFixedWindowQuota("rediss://redis.example/0")
+    quota.client = FakeRedis()
+    identity = APIIdentity("operator-lab", AccessRole.OPERATOR, frozenset({"*"}), 2)
+
+    assert await quota.consume(identity) == (False, 41)
+
+
+def test_oidc_mode_requires_complete_secure_configuration() -> None:
+    with pytest.raises(ValueError, match="obrigatórios"):
+        APIAccessController.build(True, None, auth_mode="oidc")
+    with pytest.raises(ValueError, match="HTTPS"):
+        APIAccessController.build(
+            True,
+            None,
+            auth_mode="oidc",
+            oidc_issuer="http://identity.example/",
+            oidc_audience="aieo",
+            oidc_jwks_url="https://identity.example/jwks.json",
+        )
+    with pytest.raises(ValueError, match="api_key ou oidc"):
+        APIAccessController.build(True, None, auth_mode="unknown")

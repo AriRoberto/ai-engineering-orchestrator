@@ -49,6 +49,12 @@ def validate_inputs(args: argparse.Namespace) -> None:
             fail(f"{label} inválido")
     if args.storage_class and not NAME_PATTERN.fullmatch(args.storage_class):
         fail("StorageClass inválida")
+    if not args.oidc_issuer.startswith("https://"):
+        fail("OIDC issuer deve usar HTTPS")
+    if not args.oidc_jwks_url.startswith("https://"):
+        fail("OIDC JWKS URL deve usar HTTPS")
+    if not args.oidc_audience or len(args.oidc_audience) > 255:
+        fail("OIDC audience inválida")
 
 
 def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
@@ -91,6 +97,25 @@ def prepare_tree(args: argparse.Namespace, destination: Path) -> Path:
         overlay / "certificate.yaml",
         "orchestrator.staging.example.com",
         args.hostname,
+        1,
+    )
+    config = overlay / "config-map-patch.yaml"
+    replace_exact(
+        config,
+        "https://identity.staging.example.com/.well-known/jwks.json",
+        args.oidc_jwks_url,
+        1,
+    )
+    replace_exact(
+        config,
+        "https://identity.staging.example.com/",
+        args.oidc_issuer,
+        1,
+    )
+    replace_exact(
+        config,
+        "ai-engineering-orchestrator",
+        args.oidc_audience,
         1,
     )
     replace_exact(
@@ -186,6 +211,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--secret-store", required=True)
     parser.add_argument("--cluster-issuer", required=True)
     parser.add_argument("--storage-class")
+    parser.add_argument("--oidc-issuer", required=True)
+    parser.add_argument("--oidc-audience", required=True)
+    parser.add_argument("--oidc-jwks-url", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--context")
     parser.add_argument("--check-cluster", action="store_true")
@@ -202,7 +230,11 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="aieo-staging-") as temp_dir:
         overlay = prepare_tree(args, Path(temp_dir))
         rendered = run(["kubectl", "kustomize", str(overlay)])
-    if ZERO_DIGEST in rendered or "orchestrator.staging.example.com" in rendered:
+    if (
+        ZERO_DIGEST in rendered
+        or "orchestrator.staging.example.com" in rendered
+        or "identity.staging.example.com" in rendered
+    ):
         fail("a renderização ainda contém placeholders")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(rendered, encoding="utf-8")
