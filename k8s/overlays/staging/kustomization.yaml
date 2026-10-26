@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ai-engineering-orchestrator
+resources:
+  - ../../base
+  - postgres.yaml
+  - postgres-network-policy.yaml
+  - external-secrets.yaml
+  - ingress.yaml
+  - certificate.yaml
+images:
+  - name: ghcr.io/ariroberto/ai-engineering-orchestrator
+    newName: ghcr.io/ariroberto/ai-engineering-orchestrator
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: pgvector/pgvector
+    newName: pgvector/pgvector
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+patches:
+  - path: namespace-patch.yaml
+  - path: config-map-patch.yaml
+  - path: deployment-patch.yaml
+  - path: migration-patch.yaml
+  - path: api-network-policy-patch.yaml

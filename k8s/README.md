@@ -62,3 +62,25 @@ make lab-kubernetes-local-down
 O banco usa `emptyDir` deliberadamente: cada execução recria o StatefulSet e valida as migrações a
 partir de uma instância limpa. Persistência, Ingress, TLS e secret manager permanecem decisões do
 ambiente de homologação ou produção.
+
+## Perfil de homologação
+
+O overlay `k8s/overlays/staging` adiciona a fronteira de plataforma que não pertence à base:
+
+- imagem do GHCR fixada por digest;
+- PostgreSQL/pgvector com PVC de `20Gi`;
+- Ingress NGINX e TLS emitido pelo cert-manager;
+- quatro `ExternalSecret` sincronizados por um `ClusterSecretStore` externo;
+- políticas de rede específicas para entrada e dependências operacionais.
+
+Valide o template sem acessar um cluster:
+
+```bash
+make lab-homologacao
+```
+
+Os digests zerados da aplicação e do PostgreSQL, além do hostname
+`orchestrator.staging.example.com`, são placeholders de falha segura e devem ser substituídos antes
+da implantação. Consulte o
+[runbook de homologação](../docs/pt-BR/homologacao-kubernetes.md) para o contrato de segredos,
+pré-requisitos, ordem de promoção e rollback.
