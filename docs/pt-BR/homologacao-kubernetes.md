@@ -62,14 +62,17 @@ gh workflow run publish-image.yml -f tag="staging-$(git rev-parse --short=12 HEA
 gh run watch --workflow=publish-image.yml
 ```
 
-Copie do resumo do workflow a referência `ghcr.io/...@sha256:...`. Não promova apenas pela tag.
+Copie do resumo do workflow a referência `ghcr.io/...@sha256:...`. Não promova apenas pela tag. A
+imagem atual da homologação foi publicada pela execução `40412874655` e está fixada em
+`sha256:423c6262623e3940fe4fd3211586a03edd37777d4716c68b2ec1478a2942d19c`.
 
-O digest do `pgvector/pgvector:pg17` já está fixado no índice multi-arquitetura verificado
+Os dois digests atuais já estão fixados e verificáveis. A aplicação usa
+`sha256:423c6262623e3940fe4fd3211586a03edd37777d4716c68b2ec1478a2942d19c`; o
+`pgvector/pgvector:pg17` usa o índice multi-arquitetura
 `sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d`. Em uma promoção,
-substitua o digest zerado da aplicação pelo digest publicado pelo workflow. O placeholder da
-aplicação é deliberadamente inválido para impedir implantação acidental de uma imagem mutável.
-Substitua também `orchestrator.staging.example.com` pelo hostname real e ajuste os nomes/labels de
-componentes da plataforma quando forem diferentes.
+substitua o digest da aplicação pelo novo digest publicado pelo workflow. Substitua também
+`orchestrator.staging.example.com` pelo hostname real e ajuste os nomes/labels de componentes da
+plataforma quando forem diferentes.
 
 Renderize e revise antes de aplicar:
 
