@@ -162,12 +162,15 @@ Entregas:
 
 ## Próximos incrementos
 
-1. métricas de dependências, notificação gerenciada, identidade federada e quotas distribuídas;
-2. validar Kubernetes e SLOs nos ambientes externos correspondentes;
-3. definir o escopo da próxima versão somente após registrar os resultados locais e externos.
+1. perfil declarativo de homologação com registry, PVC, Ingress/TLS e External Secrets —
+   implementado estaticamente; implantação em cluster externo pendente;
+2. métricas de dependências, notificação gerenciada, identidade federada e quotas distribuídas;
+3. validar Kubernetes e SLOs nos ambientes externos correspondentes;
+4. definir o escopo da próxima versão somente após registrar os resultados locais e externos.
 
 Decisões arquiteturais: [ADR-007](../architecture/ADR-007-opentelemetry-observability.md),
 [ADR-008](../architecture/ADR-008-api-access-control.md) e
 [ADR-009](../architecture/ADR-009-operations-ui.md) e
 [ADR-010](../architecture/ADR-010-kubernetes-deployment.md) e
-[ADR-011](../architecture/ADR-011-slo-incident-response.md).
+[ADR-011](../architecture/ADR-011-slo-incident-response.md) e
+[ADR-012](../architecture/ADR-012-staging-platform-profile.md).

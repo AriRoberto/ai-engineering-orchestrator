@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator-api
+spec:
+  replicas: 2
+  template:
+    spec:
+      imagePullSecrets:
+        - name: orchestrator-registry
+      containers:
+        - name: api
+          imagePullPolicy: IfNotPresent
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: api

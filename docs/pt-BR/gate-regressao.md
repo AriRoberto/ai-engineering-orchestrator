@@ -8,8 +8,8 @@ lint; consolida as validações reproduzíveis de integração e operação.
 
 | Escopo | Comando | Validações |
 |---|---|---|
-| Estático | `make regressao-static` | Manifests Kubernetes e artefatos da release |
-| Local | `make regressao` | Fases 2, 3, piloto público da Fase 4, observabilidade, acesso, Kubernetes estático e release |
+| Estático | `make regressao-static` | Base Kubernetes, perfil de homologação e artefatos da release |
+| Local | `make regressao` | Fases 2, 3, piloto público da Fase 4, observabilidade, acesso, Kubernetes, homologação e release |
 | Completo | `make regressao-full` | Escopo local, piloto privado e cluster kind |
 
 O escopo `local` é o padrão. Ele requer Docker, Docker Compose, `curl`, Python 3.12+, `kubectl` e acesso
@@ -40,6 +40,8 @@ Em caso de falha, a saída identifica a última etapa iniciada. Execute o labora
 isoladamente para obter o diagnóstico detalhado e consulte os logs com `make logs` quando a falha
 envolver API ou PostgreSQL.
 
-Em 26/10/2026, o escopo `local` concluiu as sete etapas em sequência: fundação de conhecimento e
-MCP, especialistas, evidências públicas, observabilidade, acesso governado, manifests Kubernetes e
-artefatos da release. O encerramento automático removeu os serviços Compose ao final.
+Em 26/10/2026, o escopo `local` concluiu inicialmente sete etapas em sequência. O gate passou a
+incluir também a validação estática do perfil de homologação, totalizando oito etapas: fundação de
+conhecimento e MCP, especialistas, evidências públicas, observabilidade, acesso governado,
+manifests Kubernetes, perfil de homologação e artefatos da release. O encerramento automático
+remove os serviços Compose ao final.

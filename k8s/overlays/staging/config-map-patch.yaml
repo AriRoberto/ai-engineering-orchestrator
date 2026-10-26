@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-config
+data:
+  AIEO_ENVIRONMENT: staging
+  AIEO_DEMO_MODE: "false"
+  AIEO_LOG_LEVEL: INFO
+  AIEO_LLM_PROVIDER: simulated
+  AIEO_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318/v1/traces
