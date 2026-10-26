@@ -13,9 +13,13 @@ kubectl kustomize k8s/overlays/staging >"${rendered}"
 
 echo "2/6 Validando registry imutável e controles de workload..."
 test "$(grep -c 'image: ghcr.io/ariroberto/ai-engineering-orchestrator@sha256:' "${rendered}")" = "2"
+grep -q 'image: ghcr.io/ariroberto/ai-engineering-orchestrator@sha256:423c6262623e3940fe4fd3211586a03edd37777d4716c68b2ec1478a2942d19c' "${rendered}"
 grep -q 'image: pgvector/pgvector@sha256:' "${rendered}"
 grep -q 'image: pgvector/pgvector@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d' "${rendered}"
-grep -q 'sha256:0000000000000000000000000000000000000000000000000000000000000000' "${rendered}"
+if grep -q 'sha256:0000000000000000000000000000000000000000000000000000000000000000' "${rendered}"; then
+  echo "O overlay não pode conter digest zerado após a publicação oficial." >&2
+  exit 1
+fi
 grep -q 'name: orchestrator-registry' "${rendered}"
 grep -q 'runAsNonRoot: true' "${rendered}"
 grep -q 'readOnlyRootFilesystem: true' "${rendered}"
@@ -64,4 +68,4 @@ fi
 
 echo ""
 echo "✓ Perfil de homologação validado estaticamente."
-echo "Substitua hostname, ClusterSecretStore e os digests antes de aplicar no cluster."
+echo "Substitua hostname e recursos globais da plataforma antes de aplicar no cluster."

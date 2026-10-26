@@ -12,6 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ZERO_DIGEST = "sha256:" + "0" * 64
+PINNED_APP_DIGEST = (
+    "sha256:423c6262623e3940fe4fd3211586a03edd37777d4716c68b2ec1478a2942d19c"
+)
 PINNED_POSTGRES_DIGEST = (
     "sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d"
 )
@@ -64,7 +67,7 @@ def prepare_tree(args: argparse.Namespace, destination: Path) -> Path:
     app_block = (
         "  - name: ghcr.io/ariroberto/ai-engineering-orchestrator\n"
         "    newName: ghcr.io/ariroberto/ai-engineering-orchestrator\n"
-        f"    digest: {ZERO_DIGEST}"
+        f"    digest: {PINNED_APP_DIGEST}"
     )
     postgres_block = (
         "  - name: pgvector/pgvector\n"
@@ -73,7 +76,7 @@ def prepare_tree(args: argparse.Namespace, destination: Path) -> Path:
     )
     if content.count(app_block) != 1 or content.count(postgres_block) != 1:
         fail("blocos de imagem do template não correspondem ao contrato esperado")
-    content = content.replace(app_block, app_block.replace(ZERO_DIGEST, args.app_digest))
+    content = content.replace(app_block, app_block.replace(PINNED_APP_DIGEST, args.app_digest))
     content = content.replace(
         postgres_block, postgres_block.replace(PINNED_POSTGRES_DIGEST, args.postgres_digest)
     )
@@ -178,7 +181,7 @@ def check_cluster(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Renderiza o perfil imutável de homologação.")
     parser.add_argument("--hostname", required=True)
-    parser.add_argument("--app-digest", required=True)
+    parser.add_argument("--app-digest", default=PINNED_APP_DIGEST)
     parser.add_argument("--postgres-digest", default=PINNED_POSTGRES_DIGEST)
     parser.add_argument("--secret-store", required=True)
     parser.add_argument("--cluster-issuer", required=True)
