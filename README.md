@@ -260,6 +260,9 @@ comportamento de limpeza.
 O perfil de homologação em `k8s/overlays/staging` cobre registry por digest, PVC, Ingress/TLS e
 External Secrets. Valide-o com `make lab-homologacao` e consulte o
 [runbook de homologação](docs/pt-BR/homologacao-kubernetes.md) antes de preparar um cluster externo.
+O workflow `publish-image.yml` publica a imagem multi-arquitetura no GHCR com SBOM e proveniência;
+o script `renderizar-homologacao.py` injeta valores reais e executa o preflight sem modificar os
+templates versionados.
 
 ## Projetos pilotos
 
