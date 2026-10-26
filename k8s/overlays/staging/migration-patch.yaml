@@ -1,0 +1,12 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: orchestrator-migrations
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: migration
+    spec:
+      imagePullSecrets:
+        - name: orchestrator-registry

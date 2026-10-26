@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-kubernetes-local lab-kubernetes-local-down validar-release regressao-static regressao regressao-full
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-homologacao lab-kubernetes-local lab-kubernetes-local-down validar-release regressao-static regressao regressao-full
 
 install:
 	python -m pip install -e '.[dev]'
@@ -51,6 +51,9 @@ lab-fase5-acesso:
 
 lab-fase5-kubernetes:
 	./scripts/laboratorio-fase5-kubernetes.sh
+
+lab-homologacao:
+	./scripts/laboratorio-homologacao.sh
 
 lab-kubernetes-local:
 	./scripts/laboratorio-kubernetes-local.sh

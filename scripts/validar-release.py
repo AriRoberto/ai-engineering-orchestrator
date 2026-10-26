@@ -42,8 +42,8 @@ def validate_structured_files() -> None:
             encoding="utf-8"
         )
     )
-    for directory in (ROOT / "k8s/base", ROOT / "observability/rules"):
-        for path in directory.glob("*.y*ml"):
+    for directory in (ROOT / "k8s", ROOT / "observability/rules"):
+        for path in directory.rglob("*.y*ml"):
             list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
 
 
