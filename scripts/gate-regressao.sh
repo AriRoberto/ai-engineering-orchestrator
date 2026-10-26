@@ -91,6 +91,7 @@ if [[ "${scope}" != "--static" ]]; then
 fi
 
 run_step "Manifests Kubernetes" ./scripts/laboratorio-fase5-kubernetes.sh
+run_step "Perfil Kubernetes de homologação" ./scripts/laboratorio-homologacao.sh
 run_step "Artefatos da release" "${python_bin}" scripts/validar-release.py
 
 if [[ "${scope}" == "--full" ]]; then

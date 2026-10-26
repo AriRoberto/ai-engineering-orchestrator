@@ -257,6 +257,10 @@ make regressao-full    # piloto privado e cluster kind, explicitamente habilitad
 Consulte o [guia do gate de regressão](docs/pt-BR/gate-regressao.md) para requisitos, segurança e
 comportamento de limpeza.
 
+O perfil de homologação em `k8s/overlays/staging` cobre registry por digest, PVC, Ingress/TLS e
+External Secrets. Valide-o com `make lab-homologacao` e consulte o
+[runbook de homologação](docs/pt-BR/homologacao-kubernetes.md) antes de preparar um cluster externo.
+
 ## Projetos pilotos
 
 - `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.

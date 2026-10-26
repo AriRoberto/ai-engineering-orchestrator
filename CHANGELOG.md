@@ -2,6 +2,8 @@
 
 ## Não lançado
 
+- Adicionado perfil Kubernetes de homologação com imagem GHCR por digest, PostgreSQL persistente,
+  Ingress/TLS, External Secrets, políticas de rede, laboratório estático e runbook de promoção.
 - Consolidado e validado um gate de regressão único com escopos estático, local e completo, limpeza
   segura de serviços Compose e integração ao workflow de CI.
 - Concluída a Fase 4 após validação real do piloto privado `app-ams` com token fine-grained
