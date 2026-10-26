@@ -24,12 +24,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      AIEO_ENVIRONMENT: development
-      AIEO_DEMO_MODE: "true"
-      AIEO_DATABASE_URL: postgresql+psycopg://aieo:aieo@postgres:5432/aieo
-      AIEO_LLM_PROVIDER: simulated
-      AIEO_TELEMETRY_ENABLED: "true"
-      AIEO_METRICS_ENABLED: "true"
+      AIEO_ENVIRONMENT: ${AIEO_ENVIRONMENT:-development}
+      AIEO_LOG_LEVEL: ${AIEO_LOG_LEVEL:-INFO}
+      AIEO_DEMO_MODE: ${AIEO_DEMO_MODE:-true}
+      AIEO_DATABASE_URL: ${AIEO_DATABASE_URL:-postgresql+psycopg://aieo:aieo@postgres:5432/aieo}
+      AIEO_LLM_PROVIDER: ${AIEO_LLM_PROVIDER:-simulated}
+      AIEO_LLM_MODEL: ${AIEO_LLM_MODEL:-gpt-6-astra}
+      AIEO_LLM_PLANNING_ENABLED: ${AIEO_LLM_PLANNING_ENABLED:-true}
+      AIEO_TELEMETRY_ENABLED: ${AIEO_TELEMETRY_ENABLED:-true}
+      AIEO_METRICS_ENABLED: ${AIEO_METRICS_ENABLED:-true}
+      AIEO_API_AUTH_ENABLED: ${AIEO_API_AUTH_ENABLED:-false}
+      AIEO_MAX_STEPS: ${AIEO_MAX_STEPS:-12}
+      AIEO_AGENT_TIMEOUT_SECONDS: ${AIEO_AGENT_TIMEOUT_SECONDS:-5}
+      AIEO_MAX_RETRIES: ${AIEO_MAX_RETRIES:-1}
+      AIEO_GITHUB_EVIDENCE_TIMEOUT_SECONDS: ${AIEO_GITHUB_EVIDENCE_TIMEOUT_SECONDS:-10}
     depends_on:
       postgres:
         condition: service_healthy

@@ -34,6 +34,7 @@ class TaskRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=10_000)
     read_only: bool = True
     demo: bool = False
+    preferred_agents: list[AgentKind] = Field(default_factory=list, max_length=8)
     context: dict[str, Any] = Field(default_factory=dict)
 
 

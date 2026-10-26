@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import UUID
 
 import structlog
+import yaml
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
@@ -161,6 +162,15 @@ class LLMGenerateRequest(BaseModel):
     max_output_tokens: int = Field(default=1_000, ge=1, le=8_000)
 
 
+class ProjectSummary(BaseModel):
+    id: str
+    owner: str
+    repository: str
+    default_branch: str
+    visibility: str
+    mode: str
+
+
 app = FastAPI(
     title=settings.app_name,
     version="0.2.0",
@@ -213,6 +223,20 @@ def list_agents() -> list[dict[str, str]]:
         {"id": agent.kind.value, "description": agent.description}
         for agent in orchestrator.agents.values()
     ]
+
+
+@app.get("/v1/projects", response_model=list[ProjectSummary], tags=["projects"])
+def list_projects() -> list[ProjectSummary]:
+    projects: list[ProjectSummary] = []
+    config_dir = Path(settings.mcp_project_config_dir)
+    for path in sorted(config_dir.glob("*.yaml")):
+        config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        required = {"id", "owner", "repository", "default_branch", "visibility", "mode"}
+        if not required <= config.keys():
+            logger.warning("invalid_project_config_skipped", path=str(path))
+            continue
+        projects.append(ProjectSummary.model_validate(config))
+    return projects
 
 
 @app.post(

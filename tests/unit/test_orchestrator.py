@@ -35,6 +35,21 @@ def test_routes_multiple_specialists_and_assigns_unique_ids() -> None:
     }
 
 
+def test_preferred_agents_override_automatic_routing_and_remove_duplicates() -> None:
+    execution = make_orchestrator().execute(
+        TaskRequest(
+            project_id="demo-project",
+            prompt="Analise código, Docker e Kubernetes",
+            demo=True,
+            preferred_agents=[AgentKind.QA, AgentKind.SECURITY, AgentKind.QA],
+        )
+    )
+
+    assert execution.status == ExecutionStatus.COMPLETED
+    assert execution.selected_agents == [AgentKind.QA, AgentKind.SECURITY]
+    assert [result.agent for result in execution.results] == [AgentKind.QA, AgentKind.SECURITY]
+
+
 def test_write_request_waits_for_approval() -> None:
     execution = make_orchestrator().execute(
         TaskRequest(project_id="demo-project", prompt="Implemente uma feature", read_only=False)
