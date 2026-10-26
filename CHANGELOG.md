@@ -2,6 +2,8 @@
 
 ## Não lançado
 
+- Consolidado e validado um gate de regressão único com escopos estático, local e completo, limpeza
+  segura de serviços Compose e integração ao workflow de CI.
 - Concluída a Fase 4 após validação real do piloto privado `app-ams` com token fine-grained
   temporário e somente leitura, coleta exclusiva de metadados, auditoria persistente e confirmação
   de que a credencial não integra a resposta pública.
