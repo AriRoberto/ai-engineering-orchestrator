@@ -74,6 +74,18 @@ logger = structlog.get_logger()
 access_controller = APIAccessController.build(
     settings.api_auth_enabled,
     settings.api_keys_file,
+    auth_mode=settings.api_auth_mode,
+    oidc_issuer=settings.oidc_issuer,
+    oidc_audience=settings.oidc_audience,
+    oidc_jwks_url=settings.oidc_jwks_url,
+    oidc_role_claim=settings.oidc_role_claim,
+    oidc_projects_claim=settings.oidc_projects_claim,
+    oidc_quota_claim=settings.oidc_quota_claim,
+    redis_url=(
+        settings.api_quota_redis_url.get_secret_value()
+        if settings.api_quota_redis_url
+        else None
+    ),
 )
 repository = (
     PostgresExecutionRepository(settings.database_url)
