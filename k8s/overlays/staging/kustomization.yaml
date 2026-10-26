@@ -11,7 +11,7 @@ resources:
 images:
   - name: ghcr.io/ariroberto/ai-engineering-orchestrator
     newName: ghcr.io/ariroberto/ai-engineering-orchestrator
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+    digest: sha256:423c6262623e3940fe4fd3211586a03edd37777d4716c68b2ec1478a2942d19c
   - name: pgvector/pgvector
     newName: pgvector/pgvector
     digest: sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d

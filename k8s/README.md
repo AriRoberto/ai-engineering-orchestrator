@@ -79,8 +79,8 @@ Valide o template sem acessar um cluster:
 make lab-homologacao
 ```
 
-O digest zerado da aplicação e o hostname `orchestrator.staging.example.com` são placeholders de
-falha segura e devem ser substituídos antes da implantação. A imagem do PostgreSQL já está fixada
-por digest verificado. Consulte o
+As imagens da aplicação e do PostgreSQL estão fixadas por digests verificados. O hostname
+`orchestrator.staging.example.com` permanece como placeholder de falha segura e deve ser substituído
+antes da implantação. Consulte o
 [runbook de homologação](../docs/pt-BR/homologacao-kubernetes.md) para o contrato de segredos,
 pré-requisitos, ordem de promoção e rollback.
