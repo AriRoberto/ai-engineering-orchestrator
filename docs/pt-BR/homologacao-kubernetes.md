@@ -53,18 +53,60 @@ docker buildx build \
   --push .
 ```
 
-Em uma branch de promoção, substitua no `kustomization.yaml` os dois digests compostos somente por
-zeros: um pelo digest `sha256` publicado da aplicação e outro pelo digest verificado da imagem
-`pgvector`. Os placeholders são deliberadamente inválidos para impedir implantação acidental de
-imagens mutáveis. Substitua também `orchestrator.staging.example.com` pelo hostname real e ajuste os
-nomes/labels de componentes da plataforma quando forem diferentes.
+O caminho oficial é o workflow **Publish container image**, que publica `linux/amd64` e
+`linux/arm64`, gera SBOM, proveniência e atestação vinculada ao GitHub. Depois que o workflow estiver
+na `main`, execute:
+
+```bash
+gh workflow run publish-image.yml -f tag="staging-$(git rev-parse --short=12 HEAD)"
+gh run watch --workflow=publish-image.yml
+```
+
+Copie do resumo do workflow a referência `ghcr.io/...@sha256:...`. Não promova apenas pela tag.
+
+O digest do `pgvector/pgvector:pg17` já está fixado no índice multi-arquitetura verificado
+`sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d`. Em uma promoção,
+substitua o digest zerado da aplicação pelo digest publicado pelo workflow. O placeholder da
+aplicação é deliberadamente inválido para impedir implantação acidental de uma imagem mutável.
+Substitua também `orchestrator.staging.example.com` pelo hostname real e ajuste os nomes/labels de
+componentes da plataforma quando forem diferentes.
 
 Renderize e revise antes de aplicar:
 
 ```bash
-kubectl kustomize k8s/overlays/staging > /tmp/aieo-staging.yaml
+.venv/bin/python scripts/renderizar-homologacao.py \
+  --hostname orchestrator.staging.seu-dominio.example \
+  --app-digest sha256:COLE-64-CARACTERES-HEXADECIMAIS \
+  --secret-store NOME-DO-CLUSTER-SECRET-STORE \
+  --cluster-issuer NOME-DO-CLUSTER-ISSUER \
+  --storage-class NOME-DA-STORAGE-CLASS \
+  --output /tmp/aieo-staging.yaml
 kubectl diff -f /tmp/aieo-staging.yaml
 ```
+
+O renderizador trabalha em diretório temporário e não altera o overlay versionado. Para executar o
+preflight contra um cluster externo antes de gerar o arquivo, acrescente:
+
+```text
+--context CONTEXTO-EXTERNO --check-cluster
+```
+
+O preflight rejeita kind, Docker Desktop e minikube; confirma os CRDs do External Secrets e
+cert-manager, `ClusterSecretStore`, `ClusterIssuer`, IngressClass, StorageClass, resolução DNS e a
+existência dos dois digests nos registries.
+
+## Gate anterior à implantação externa
+
+Não execute `kubectl apply` enquanto qualquer item abaixo estiver ausente:
+
+- contexto de cluster externo dedicado à homologação;
+- domínio real com DNS resolvendo para o Ingress;
+- `ClusterSecretStore` com identidade federada e os quatro segredos do contrato;
+- `ClusterIssuer` e IngressClass operacionais;
+- StorageClass persistente com snapshot/restore testável;
+- digest GHCR produzido pelo workflow e digest do PostgreSQL verificável;
+- manifest renderizado pelo preflight sem placeholders;
+- plano de rollback e janela de migração aprovados.
 
 ## Ordem de implantação
 

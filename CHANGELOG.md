@@ -2,6 +2,8 @@
 
 ## Não lançado
 
+- Automatizada a publicação multi-arquitetura no GHCR com SBOM/proveniência e a renderização
+  imutável de homologação com preflight de cluster, DNS, secrets, storage e imagens.
 - Adicionado perfil Kubernetes de homologação com imagem GHCR por digest, PostgreSQL persistente,
   Ingress/TLS, External Secrets, políticas de rede, laboratório estático e runbook de promoção.
 - Consolidado e validado um gate de regressão único com escopos estático, local e completo, limpeza
