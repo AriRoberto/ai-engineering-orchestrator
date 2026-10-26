@@ -94,7 +94,8 @@ Concluída no escopo local:
 
 ## Ordem imediata
 
-1. consolidar os laboratórios locais em um gate de regressão único;
+1. consolidar os laboratórios locais em um gate de regressão único — concluído e validado em
+   26/10/2026 com escopos estático, local e completo;
 2. preparar um perfil de homologação com registry, persistência, Ingress, TLS e secret manager;
 3. configurar identidade federada, quotas distribuídas e notificação gerenciada antes de produção;
 4. definir o próximo ciclo após consolidar as evidências dos testes locais e externos.
@@ -109,6 +110,7 @@ Concluída no escopo local:
 - [Fase 5 — produto e operação](fase-5-produto-operacao.md)
 - [Documentação oficial 0.2.0](documentacao-oficial.md)
 - [Checklist da release 0.2.0](release-0.2.0.md)
+- [Gate unificado de regressão](gate-regressao.md)
 - [ADRs](../architecture/)
 - [Histórico de alterações](../../CHANGELOG.md)
 - [Política de segurança](../../SECURITY.md)

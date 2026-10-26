@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-kubernetes-local lab-kubernetes-local-down validar-release
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-kubernetes-local lab-kubernetes-local-down validar-release regressao-static regressao regressao-full
 
 install:
 	python -m pip install -e '.[dev]'
@@ -60,4 +60,13 @@ lab-kubernetes-local-down:
 
 validar-release:
 	python3 scripts/validar-release.py
+
+regressao-static:
+	./scripts/gate-regressao.sh --static
+
+regressao:
+	./scripts/gate-regressao.sh --local
+
+regressao-full:
+	./scripts/gate-regressao.sh --full
 
