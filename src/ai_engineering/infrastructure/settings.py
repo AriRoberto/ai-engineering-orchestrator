@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +11,15 @@ class Settings(BaseSettings):
     telemetry_enabled: bool = True
     metrics_enabled: bool = True
     api_auth_enabled: bool = False
+    api_auth_mode: str = "api_key"
     api_keys_file: str | None = None
+    oidc_issuer: str | None = None
+    oidc_audience: str | None = None
+    oidc_jwks_url: str | None = None
+    oidc_role_claim: str = "aieo_role"
+    oidc_projects_claim: str = "aieo_projects"
+    oidc_quota_claim: str = "aieo_requests_per_minute"
+    api_quota_redis_url: SecretStr | None = None
     otel_service_name: str = "ai-engineering-orchestrator"
     otel_exporter_otlp_endpoint: str | None = None
     demo_mode: bool = True
@@ -40,6 +48,18 @@ class Settings(BaseSettings):
     evidence_max_content_total_bytes: int = 256_000
     evidence_context_max_chars: int = 12_000
     model_config = SettingsConfigDict(env_prefix="AIEO_", env_file=".env", extra="ignore")
+
+    @model_validator(mode="after")
+    def require_production_access_controls(self) -> "Settings":
+        if self.environment not in {"staging", "production"}:
+            return self
+        if not self.api_auth_enabled or self.api_auth_mode != "oidc":
+            raise ValueError("staging/production exige autenticação OIDC habilitada")
+        if not all((self.oidc_issuer, self.oidc_audience, self.oidc_jwks_url)):
+            raise ValueError("staging/production exige configuração OIDC completa")
+        if self.api_quota_redis_url is None:
+            raise ValueError("staging/production exige quota distribuída via Redis")
+        return self
 
 
 @lru_cache

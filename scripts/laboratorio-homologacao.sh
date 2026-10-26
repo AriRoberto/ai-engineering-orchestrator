@@ -23,6 +23,8 @@ fi
 grep -q 'name: orchestrator-registry' "${rendered}"
 grep -q 'runAsNonRoot: true' "${rendered}"
 grep -q 'readOnlyRootFilesystem: true' "${rendered}"
+grep -q 'AIEO_API_AUTH_MODE: oidc' "${rendered}"
+grep -q 'name: AIEO_API_QUOTA_REDIS_URL' "${rendered}"
 
 echo "3/6 Validando persistência do PostgreSQL..."
 grep -q '^kind: StatefulSet$' "${rendered}"
@@ -45,7 +47,7 @@ if grep -q '^kind: Secret$' "${rendered}"; then
 fi
 
 echo "5/6 Validando políticas de rede e falha segura dos placeholders..."
-for port in 53 443 4318 5432 8000; do
+for port in 53 443 4318 5432 6379 8000; do
   grep -q "port: ${port}" "${rendered}"
 done
 grep -q 'orchestrator.staging.example.com' "${rendered}"
@@ -58,6 +60,9 @@ python_bin="${AIEO_PYTHON_BIN:-python3}"
   --secret-store aieo-staging \
   --cluster-issuer aieo-staging \
   --storage-class encrypted-rwo \
+  --oidc-issuer https://login.aieo.invalid/ \
+  --oidc-audience aieo-staging \
+  --oidc-jwks-url https://login.aieo.invalid/jwks.json \
   --output "${promoted}"
 grep -q 'host: staging.aieo.invalid' "${promoted}"
 grep -q 'storageClassName: encrypted-rwo' "${promoted}"
