@@ -7,4 +7,9 @@ data:
   AIEO_DEMO_MODE: "false"
   AIEO_LOG_LEVEL: INFO
   AIEO_LLM_PROVIDER: simulated
+  AIEO_API_AUTH_ENABLED: "true"
+  AIEO_API_AUTH_MODE: oidc
+  AIEO_OIDC_ISSUER: https://identity.staging.example.com/
+  AIEO_OIDC_AUDIENCE: ai-engineering-orchestrator
+  AIEO_OIDC_JWKS_URL: https://identity.staging.example.com/.well-known/jwks.json
   AIEO_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318/v1/traces

@@ -159,14 +159,15 @@ de produção.
 
 ## Controle de acesso da API
 
-Quando habilitado, `APIAccessController` protege todos os endpoints `/v1` com API keys. O arquivo
-secreto contém somente hashes SHA-256 e metadados não secretos: `key_id`, papel, projetos e quota.
-O middleware autentica em tempo constante, bloqueia mutações para `viewer`, aplica quota por minuto
-e propaga a identidade apenas em contexto interno. Cada operação com `project_id` confirma a
-allowlist antes de acessar repositórios ou integrações.
+Quando habilitado, `APIAccessController` protege todos os endpoints `/v1`. O modo `api_key` é a
+opção de laboratório e usa um arquivo com hashes SHA-256 e metadados. Homologação usa OIDC, valida
+assinatura assimétrica via JWKS, issuer, audience, expiração e claims obrigatórias. Os claims
+`aieo_role`, `aieo_projects` e `aieo_requests_per_minute` controlam papel, escopo e quota.
+O middleware bloqueia mutações para `viewer` e cada operação com `project_id` confirma a allowlist.
 
-Health, métricas e OpenAPI permanecem públicos. A quota inicial reside em memória por processo;
-ambientes com múltiplas réplicas precisam de controle distribuído antes de alegar limites globais.
+Health, métricas e OpenAPI permanecem públicos. A quota local reside em memória; quando uma URL
+Redis é configurada, um script atômico aplica a janela global entre réplicas. O overlay de
+homologação recebe essa URL pelo secret manager e não contém a credencial no Git.
 
 ## Interface operacional
 
