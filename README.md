@@ -263,6 +263,9 @@ External Secrets. Valide-o com `make lab-homologacao` e consulte o
 O workflow `publish-image.yml` publica a imagem multi-arquitetura no GHCR com SBOM e proveniência;
 o script `renderizar-homologacao.py` injeta valores reais e executa o preflight sem modificar os
 templates versionados.
+O laboratório de observabilidade inclui Alertmanager, roteamento por severidade e uma entrega
+sintética ponta a ponta. Para um destino real, monte o arquivo indicado por
+`AIEO_NOTIFICATION_WEBHOOK_FILE`; a URL não é armazenada no Git.
 
 ## Projetos pilotos
 

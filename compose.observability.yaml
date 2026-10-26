@@ -1,4 +1,35 @@
 services:
+  notification-sink:
+    image: python:3.12-alpine
+    command: ["python", "/opt/aieo/mock-notification-receiver.py"]
+    volumes:
+      - ./scripts/mock-notification-receiver.py:/opt/aieo/mock-notification-receiver.py:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  alertmanager:
+    image: prom/alertmanager:v0.30.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "${AIEO_ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ${AIEO_NOTIFICATION_WEBHOOK_FILE:-./observability/notification-webhook-url.example}:/run/secrets/notification_webhook_url:ro
+    read_only: true
+    tmpfs:
+      - /alertmanager:size=32m,mode=0755,uid=65534,gid=65534
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   prometheus:
     image: prom/prometheus:v3.7.1
     command:
@@ -12,6 +43,8 @@ services:
       - ./observability/rules:/etc/prometheus/rules:ro
     depends_on:
       api:
+        condition: service_started
+      alertmanager:
         condition: service_started
     read_only: true
     tmpfs:
