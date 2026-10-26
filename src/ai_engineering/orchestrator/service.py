@@ -89,7 +89,9 @@ class AIEngineeringOrchestrator:
         execution.transition(
             ExecutionStatus.PLANNING, "Solicitação aceita para planejamento determinístico"
         )
-        execution.selected_agents = self.route(request.prompt)
+        execution.selected_agents = list(
+            dict.fromkeys(request.preferred_agents or self.route(request.prompt))
+        )
         knowledge_context = self._retrieve_knowledge(execution)
         evidence_context = self._prepare_evidence_context(execution)
         execution.plan = [

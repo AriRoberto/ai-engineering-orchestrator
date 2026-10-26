@@ -2,12 +2,15 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ai_engineering.domain.models import AgentKind
+
 
 class EvidenceExecutionRequest(BaseModel):
     project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
     prompt: str = Field(min_length=3, max_length=10_000)
     demo: bool = False
     include_content: bool = False
+    preferred_agents: list[AgentKind] = Field(default_factory=list, max_length=8)
 
 
 class EvidenceFile(BaseModel):
