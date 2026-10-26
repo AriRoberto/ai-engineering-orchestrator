@@ -246,6 +246,17 @@ docker build -t ai-engineering-orchestrator:local .
 
 A CI repete lint, testes e build do container em pushes e pull requests para `main` e `develop`.
 
+Os laboratórios estão consolidados em um gate de regressão com escopos progressivos:
+
+```bash
+make regressao-static  # manifests e artefatos estruturados
+make regressao         # integrações locais sem credenciais privadas
+make regressao-full    # piloto privado e cluster kind, explicitamente habilitados
+```
+
+Consulte o [guia do gate de regressão](docs/pt-BR/gate-regressao.md) para requisitos, segurança e
+comportamento de limpeza.
+
 ## Projetos pilotos
 
 - `AriRoberto/app-financas`: público, com inventário e conteúdo textual controlado somente leitura.
