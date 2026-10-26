@@ -52,6 +52,7 @@ class EvidenceExecutionService:
                 prompt=request.prompt,
                 demo=request.demo,
                 read_only=True,
+                preferred_agents=request.preferred_agents,
                 context={
                     "files": [item.path for item in collection.files],
                     "evidence": collection.model_dump(mode="json"),

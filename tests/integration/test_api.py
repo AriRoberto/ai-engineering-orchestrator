@@ -184,6 +184,36 @@ def test_phase3_specialists_are_available_and_executable() -> None:
     }
 
 
+def test_projects_catalog_lists_governed_configuration() -> None:
+    response = client.get("/v1/projects")
+
+    assert response.status_code == 200
+    projects = {project["id"]: project for project in response.json()}
+    assert projects["app-financas"] == {
+        "id": "app-financas",
+        "owner": "AriRoberto",
+        "repository": "https://github.com/AriRoberto/app-financas",
+        "default_branch": "main",
+        "visibility": "public",
+        "mode": "read-only",
+    }
+
+
+def test_direct_execution_accepts_preferred_agents() -> None:
+    response = client.post(
+        "/v1/executions",
+        json={
+            "project_id": "demo-project",
+            "prompt": "Analise o projeto",
+            "demo": True,
+            "preferred_agents": ["documentation", "security"],
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["selected_agents"] == ["documentation", "security"]
+
+
 def test_public_github_evidence_execution(monkeypatch) -> None:
     class FakeTransport:
         def get_tree(self, owner: str, repository: str, ref: str) -> dict[str, object]:

@@ -14,8 +14,13 @@ function statusClass(status) {
 }
 
 function App() {
-  const [projectId, setProjectId] = useState("laboratorio-fase2");
+  const [projectId, setProjectId] = useState("app-financas");
   const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("aieo-api-key") || "");
+  const [projects, setProjects] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [prompt, setPrompt] = useState("");
+  const [preferredAgents, setPreferredAgents] = useState([]);
+  const [includeContent, setIncludeContent] = useState(false);
   const [section, setSection] = useState("executions");
   const [executions, setExecutions] = useState([]);
   const [invocations, setInvocations] = useState([]);
@@ -49,8 +54,58 @@ function App() {
       setExecutions(executionData);
       setInvocations(invocationData);
       setAudits(auditData);
-      setSelected((current) => current || executionData[0] || null);
+      setSelected(executionData[0] || null);
       sessionStorage.setItem("aieo-api-key", apiKey);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadCatalog() {
+    setError("");
+    try {
+      const [projectData, agentData] = await Promise.all([
+        request("/v1/projects"),
+        request("/v1/agents"),
+      ]);
+      setProjects(projectData);
+      setAgents(agentData);
+      if (projectData.length && !projectData.some((project) => project.id === projectId)) {
+        setProjectId(projectData[0].id);
+      }
+    } catch (reason) {
+      setError(reason.message);
+    }
+  }
+
+  function toggleAgent(agentId) {
+    setPreferredAgents((current) => current.includes(agentId)
+      ? current.filter((item) => item !== agentId)
+      : [...current, agentId]);
+  }
+
+  async function createAnalysis(event) {
+    event.preventDefault();
+    if (!projectId || prompt.trim().length < 3) return;
+    setLoading(true);
+    setError("");
+    try {
+      const execution = await request("/v1/evidence/executions", {
+        method: "POST",
+        body: JSON.stringify({
+          project_id: projectId,
+          prompt: prompt.trim(),
+          demo: true,
+          include_content: includeContent,
+          preferred_agents: preferredAgents,
+        }),
+      });
+      setPrompt("");
+      await refresh();
+      setSelected(execution);
+      setSection("executions");
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -72,7 +127,10 @@ function App() {
     }
   }
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    loadCatalog();
+    refresh();
+  }, []);
 
   const sources = executions.flatMap((execution) =>
     (execution.evidence_sources || []).map((source) => ({ execution: execution.id, source })),
@@ -92,7 +150,10 @@ function App() {
         <header>
           <div><p className="eyebrow">Fase 5 · Operação</p><h1>Painel operacional</h1></div>
           <div className="connection">
-            <input aria-label="Projeto" value={projectId} onChange={(e) => setProjectId(e.target.value)} placeholder="project_id" />
+            <select aria-label="Projeto" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              {!projects.length && <option value={projectId}>{projectId}</option>}
+              {projects.map((project) => <option value={project.id} key={project.id}>{project.id}</option>)}
+            </select>
             <input aria-label="API key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="X-API-Key" />
             <button onClick={refresh} disabled={loading}>{loading ? "Atualizando…" : "Atualizar"}</button>
           </div>
@@ -105,6 +166,24 @@ function App() {
           <article><span>Acessos auditados</span><strong>{audits.length}</strong></article>
         </section>
 
+        {section === "executions" && <form className="panel analysis-form" onSubmit={createAnalysis}>
+          <div className="form-heading">
+            <div><p className="eyebrow">Nova análise</p><h2>Solicitar análise do repositório</h2></div>
+            <button type="submit" disabled={loading || prompt.trim().length < 3}>{loading ? "Executando…" : "Executar análise"}</button>
+          </div>
+          <label className="prompt-field">Pedido
+            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength="10000" placeholder="Ex.: Revise arquitetura, QA, segurança e documentação" />
+          </label>
+          <fieldset>
+            <legend>Agentes <small>(nenhum selecionado = roteamento automático)</small></legend>
+            <div className="agent-options">{agents.map((agent) => <label key={agent.id} title={agent.description}>
+              <input type="checkbox" checked={preferredAgents.includes(agent.id)} onChange={() => toggleAgent(agent.id)} />
+              <span>{agent.id}</span>
+            </label>)}</div>
+          </fieldset>
+          <label className="content-option"><input type="checkbox" checked={includeContent} onChange={(event) => setIncludeContent(event.target.checked)} /> Incluir conteúdo permitido dos arquivos</label>
+        </form>}
+
         {section === "executions" && <section className="grid">
           <div className="panel"><h2>Histórico de execuções</h2>{executions.map((item) => (
             <button className="row" onClick={() => setSelected(item)} key={item.id}>
@@ -113,7 +192,7 @@ function App() {
             </button>
           ))}{!executions.length && <Empty />}</div>
           <div className="panel detail"><h2>Detalhes</h2>{selected ? <>
-            <dl><dt>ID</dt><dd>{selected.id}</dd><dt>Estado</dt><dd>{selected.status}</dd><dt>Fontes</dt><dd>{selected.evidence_sources?.length || 0}</dd></dl>
+            <dl><dt>ID</dt><dd>{selected.id}</dd><dt>Estado</dt><dd>{selected.status}</dd><dt>Agentes</dt><dd>{selected.selected_agents?.join(", ") || "nenhum"}</dd><dt>Fontes</dt><dd>{selected.evidence_sources?.length || 0}</dd></dl>
             <h3>Resultado consolidado</h3><pre>{selected.consolidated_result || "Sem resultado."}</pre>
           </> : <Empty />}</div>
         </section>}
