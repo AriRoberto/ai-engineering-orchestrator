@@ -17,6 +17,10 @@ Adotar um overlay Kustomize de homologação com:
 - políticas de rede explícitas para Ingress, Prometheus, PostgreSQL, OTLP, DNS e HTTPS;
 - identidade federada configurada no `ClusterSecretStore`, nunca credenciais estáticas no Git.
 
+A imagem da aplicação é publicada por workflow com SBOM, proveniência e atestação. Um renderizador
+fora da árvore Git injeta hostname, digests e nomes dos recursos globais e pode executar preflight
+somente contra contexto externo, bloqueando clusters locais e dependências ausentes.
+
 O perfil permanece neutro de nuvem. Hostname, digest, StorageClass e objetos globais de plataforma
 são parâmetros obrigatórios da promoção. Produção deve substituir o PostgreSQL interno por serviço
 gerenciado e demonstrar backup/restauração antes de receber tráfego.
