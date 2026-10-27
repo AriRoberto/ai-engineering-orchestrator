@@ -320,6 +320,11 @@ Na interface:
 6. aguarde o estado `COMPLETED`;
 7. confira agentes participantes, resultado consolidado e fontes de evidência.
 
+Para demonstrar outro projeto público sem editar YAML, clique em **+ Projeto**, informe
+`OWNER/REPO` e clique em **Validar e cadastrar**. O botão existe somente na stack local de demo; o
+backend valida os metadados no GitHub, persiste o projeto em `.aieo-demo/projects` e fixa o acesso
+como somente leitura. Depois do cadastro, o novo projeto já fica selecionado para análise.
+
 O resultado é uma análise controlada dos arquivos coletados. Como o provedor é simulado, esta etapa
 valida a orquestração e a rastreabilidade, não a qualidade de um modelo externo pago.
 

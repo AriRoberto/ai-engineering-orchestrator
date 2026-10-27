@@ -27,6 +27,7 @@ def test_runtime_identifies_active_llm_without_exposing_credentials() -> None:
         "llm_model": "deterministic-demo",
         "external_api": False,
         "usage_accounting": "estimated",
+        "project_registration_enabled": False,
     }
     assert "key" not in response.text.casefold()
 
@@ -211,6 +212,16 @@ def test_projects_catalog_lists_governed_configuration() -> None:
         "visibility": "public",
         "mode": "read-only",
     }
+
+
+def test_project_registration_is_disabled_by_default() -> None:
+    response = client.post(
+        "/v1/projects",
+        json={"repository": "AriRoberto/app-financas"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Cadastro de projetos desabilitado"
 
 
 def test_direct_execution_accepts_preferred_agents() -> None:

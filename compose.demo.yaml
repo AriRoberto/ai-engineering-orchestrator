@@ -9,5 +9,6 @@ services:
       AIEO_LLM_PROVIDER: simulated
       AIEO_DATABASE_URL: postgresql+psycopg://aieo:aieo@postgres:5432/aieo
       AIEO_MCP_PROJECT_CONFIG_DIR: /app/configs/projects
+      AIEO_PROJECT_REGISTRATION_ENABLED: "true"
     volumes:
-      - ./.aieo-demo/projects:/app/configs/projects:ro
+      - ./.aieo-demo/projects:/app/configs/projects

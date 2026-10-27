@@ -2,7 +2,6 @@ from pathlib import Path
 from uuid import UUID
 
 import structlog
-import yaml
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
@@ -20,6 +19,7 @@ from ai_engineering.evidence.audit import (
     EvidenceAuditRepository,
     PostgresEvidenceAuditRepository,
 )
+from ai_engineering.evidence.catalog import ProjectCatalog, ProjectSummary, PublicProjectCreate
 from ai_engineering.evidence.context import EvidenceContextBuilder
 from ai_engineering.evidence.github import (
     EvidenceCollectionError,
@@ -176,21 +176,16 @@ evidence_execution_service = EvidenceExecutionService(
     EvidenceContextBuilder(settings.evidence_context_max_chars),
     evidence_audit_repository,
 )
+project_catalog = ProjectCatalog(
+    settings.mcp_project_config_dir,
+    settings.github_evidence_timeout_seconds,
+)
 
 
 class LLMGenerateRequest(BaseModel):
     prompt: str = Field(min_length=2, max_length=10_000)
     instructions: str = Field(default="Responda como assistente de engenharia.", max_length=5_000)
     max_output_tokens: int = Field(default=1_000, ge=1, le=8_000)
-
-
-class ProjectSummary(BaseModel):
-    id: str
-    owner: str
-    repository: str
-    default_branch: str
-    visibility: str
-    mode: str
 
 
 app = FastAPI(
@@ -230,6 +225,7 @@ def runtime() -> dict[str, str | bool]:
         "llm_model": settings.llm_model if is_openai else "deterministic-demo",
         "external_api": is_openai,
         "usage_accounting": "measured" if is_openai else "estimated",
+        "project_registration_enabled": settings.project_registration_enabled,
     }
 
 
@@ -261,16 +257,26 @@ def list_agents() -> list[dict[str, str]]:
 
 @app.get("/v1/projects", response_model=list[ProjectSummary], tags=["projects"])
 def list_projects() -> list[ProjectSummary]:
-    projects: list[ProjectSummary] = []
-    config_dir = Path(settings.mcp_project_config_dir)
-    for path in sorted(config_dir.glob("*.yaml")):
-        config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        required = {"id", "owner", "repository", "default_branch", "visibility", "mode"}
-        if not required <= config.keys():
-            logger.warning("invalid_project_config_skipped", path=str(path))
-            continue
-        projects.append(ProjectSummary.model_validate(config))
-    return projects
+    return project_catalog.list()
+
+
+@app.post(
+    "/v1/projects",
+    response_model=ProjectSummary,
+    status_code=status.HTTP_201_CREATED,
+    tags=["projects"],
+)
+def register_public_project(request: PublicProjectCreate) -> ProjectSummary:
+    if not settings.project_registration_enabled:
+        raise HTTPException(status_code=403, detail="Cadastro de projetos desabilitado")
+    try:
+        return project_catalog.register_public(request)
+    except FileExistsError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post(
