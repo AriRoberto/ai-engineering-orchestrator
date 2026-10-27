@@ -196,9 +196,9 @@ printf 'Revisão: %s\n' "${revision}"
 printf 'Execução: %s\n' "${execution_id}"
 printf 'Especialistas: %s | Fontes: %s\n' "${agents}" "${sources}"
 printf 'UI: %s/ui/\n' "${base_url}"
-printf 'Relatório: %s/ui/?section=report\n' "${base_url}"
+printf 'Relatório: %s/ui/?project=%s&section=report\n' "${base_url}" "${project_id}"
 printf 'Encerrar: docker compose -f compose.yaml -f compose.demo.yaml down\n'
 
 if [[ "${open_browser}" == true ]]; then
-  open "${base_url}/ui/?section=report"
+  open "${base_url}/ui/?project=${project_id}&section=report"
 fi

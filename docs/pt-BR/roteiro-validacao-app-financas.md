@@ -232,7 +232,7 @@ em Markdown ou imprimi-lo em PDF.
 Atalho direto para o relatório da execução mais recente do projeto selecionado:
 
 ```text
-http://localhost:8000/ui/?section=report
+http://localhost:8000/ui/?project=app-financas&section=report
 ```
 
 Para demonstrar outro repositório público do GitHub sem editar YAML manualmente:
