@@ -34,7 +34,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Modo demo e ferramentas simuladas | Implementado |
 | Governança Git e aprovação para escrita | Implementado |
 | PostgreSQL, pgvector, ingestão e busca híbrida | Implementado na fundação da Fase 2 |
-| Contrato LLM e adaptador OpenAI Agents SDK | Parcial — provedor simulado é o padrão |
+| Contrato LLM e adaptador OpenAI Agents SDK | Implementado e opcional — simulado é o padrão seguro |
 | RAG integrado ao fluxo do orquestrador | Implementado com embeddings de demonstração |
 | Memória persistente de execuções | Implementado com PostgreSQL |
 | MCP com ferramentas governadas | Implementado com servidor simulado e auditoria |
@@ -227,14 +227,32 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 
 ## LLM, MCP e Agentic RAG
 
-A fundação da Fase 2 já inclui um contrato configurável de LLM, provedor simulado, adaptador opcional
-para OpenAI Agents SDK, ingestão protegida, recuperação híbrida com fontes, PostgreSQL/pgvector e
-feedback persistente. Recuperação e LLM já participam do fluxo do orquestrador com limites de tokens
-e uso estimado explicitamente identificado. As execuções e suas linhas do tempo são persistidas no
-PostgreSQL. Medição oficial de custos continua pendente. O gateway MCP aplica allowlists, schemas,
+A fundação da Fase 2 inclui um contrato configurável de LLM, provedor simulado e integração opcional
+com o OpenAI Agents SDK via Responses API. A integração real recebe a chave por Docker secret, limita
+tokens e tempo, desativa armazenamento e tracing por padrão e registra o consumo retornado pelo SDK.
+O modo simulado permanece como padrão para impedir custo acidental. As execuções e suas linhas do
+tempo são persistidas no PostgreSQL. Conversão oficial de tokens em custo continua pendente. O gateway MCP aplica allowlists, schemas,
 aprovação e escopos por projeto; o transporte real permanece desacoplado e o laboratório usa um
 servidor simulado sem efeitos externos. O aprendizado ocorre por memória
 persistente e feedback validado — não por alegação de retreinamento automático.
+
+Para executar a demonstração com um modelo real, grave apenas a chave no arquivo, restrinja sua
+permissão e informe um modelo disponível na conta:
+
+```bash
+mkdir -p "$HOME/.config/aieo"
+read -rsp 'Chave OpenAI: ' AIEO_KEY_INPUT; printf '\n'
+printf '%s' "$AIEO_KEY_INPUT" > "$HOME/.config/aieo/openai-api-key"
+unset AIEO_KEY_INPUT
+chmod 600 "$HOME/.config/aieo/openai-api-key"
+make demo-openai \
+  OPENAI_KEY_FILE="$HOME/.config/aieo/openai-api-key" \
+  MODEL="gpt-5.6-luna" \
+  REPOSITORY="AriRoberto/app-financas"
+```
+
+A chave não entra na imagem nem no repositório. O comando falha se o arquivo estiver ausente, com
+permissão ampla ou sem modelo explícito. Use `make demo` para continuar sem chamada externa.
 
 ## Testes e qualidade
 
