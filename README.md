@@ -277,6 +277,9 @@ make demo
 O comando sobe uma stack isolada, analisa `AriRoberto/app-financas`, valida proveniência e deixa a
 UI com um relatório técnico copiável e imprimível. Outro repositório público pode ser usado com
 `make demo REPOSITORY=OWNER/REPOSITORY`.
+Para um repositório privado, `make demo-private REPOSITORY=OWNER/REPO TOKEN_FILE=/caminho/token`
+monta uma credencial fine-grained somente leitura, força coleta apenas de metadados e mantém o
+escopo restrito ao repositório informado.
 
 ## Projetos pilotos
 
