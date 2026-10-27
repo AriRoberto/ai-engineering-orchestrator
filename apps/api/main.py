@@ -221,6 +221,18 @@ def health() -> dict[str, str]:
     return {"status": "healthy", "service": "ai-engineering-orchestrator"}
 
 
+@app.get("/runtime", tags=["system"])
+def runtime() -> dict[str, str | bool]:
+    is_openai = settings.llm_provider == "openai-agents"
+    return {
+        "llm_mode": "openai" if is_openai else "simulated",
+        "llm_provider": settings.llm_provider,
+        "llm_model": settings.llm_model if is_openai else "deterministic-demo",
+        "external_api": is_openai,
+        "usage_accounting": "measured" if is_openai else "estimated",
+    }
+
+
 @app.get("/ready", tags=["system"])
 def readiness() -> dict[str, str]:
     engine = getattr(repository, "engine", None)
