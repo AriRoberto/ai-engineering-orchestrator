@@ -352,9 +352,8 @@ class APIAccessController:
 
     @staticmethod
     def _is_public(path: str) -> bool:
-        return path in {"/health", "/ready", "/metrics", "/openapi.json"} or path.startswith(
-            ("/docs", "/redoc", "/ui")
-        )
+        public_endpoints = {"/health", "/ready", "/runtime", "/metrics", "/openapi.json"}
+        return path in public_endpoints or path.startswith(("/docs", "/redoc", "/ui"))
 
     def _install_openapi_security(self, app: FastAPI) -> None:
         def access_openapi() -> dict[str, Any]:
