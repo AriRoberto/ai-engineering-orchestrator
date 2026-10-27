@@ -350,6 +350,11 @@ monta a chave somente como Docker secret, executa a análise e exige na resposta
 
 Na UI, **Relatório técnico** mostra provedor, modelo e tokens. Para encerrar e desmontar o segredo:
 
+O cabeçalho da interface também mostra permanentemente `LLM ATIVO: OPENAI · <modelo>` com
+`tokens medidos`. No modo local sem chamada externa, ele mostra `LLM ATIVO: SIMULADO ·
+deterministic-demo` com `tokens estimados`. Esse indicador é informado pelo backend e não permite
+enviar ou trocar credenciais pelo navegador.
+
 ```bash
 docker compose -p aieo-demo -f compose.yaml -f compose.demo.yaml \
   -f compose.demo.openai.yaml down

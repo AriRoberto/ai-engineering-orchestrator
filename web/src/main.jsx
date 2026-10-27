@@ -43,6 +43,7 @@ function App() {
   const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("aieo-api-key") || "");
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [runtime, setRuntime] = useState(null);
   const [prompt, setPrompt] = useState("");
   const [preferredAgents, setPreferredAgents] = useState([]);
   const [includeContent, setIncludeContent] = useState(false);
@@ -95,12 +96,14 @@ function App() {
   async function loadCatalog() {
     setError("");
     try {
-      const [projectData, agentData] = await Promise.all([
+      const [projectData, agentData, runtimeData] = await Promise.all([
         request("/v1/projects"),
         request("/v1/agents"),
+        request("/runtime"),
       ]);
       setProjects(projectData);
       setAgents(agentData);
+      setRuntime(runtimeData);
       if (projectData.length && !projectData.some((project) => project.id === projectId)) {
         setProjectId(projectData[0].id);
       }
@@ -204,7 +207,21 @@ function App() {
       </aside>
       <main>
         <header>
-          <div><p className="eyebrow">Fase 5 · Operação</p><h1>Painel operacional</h1></div>
+          <div>
+            <p className="eyebrow">Fase 5 · Operação</p><h1>Painel operacional</h1>
+            <div
+              className={`llm-runtime llm-runtime-${runtime?.llm_mode || "loading"}`}
+              title={runtime?.external_api
+                ? "Chamadas externas habilitadas; tokens medidos pelo provedor."
+                : "Sem chamada externa; tokens estimados localmente."}
+            >
+              <span>LLM ativo</span>
+              <strong>{runtime
+                ? `${runtime.llm_mode === "openai" ? "OPENAI" : "SIMULADO"} · ${runtime.llm_model}`
+                : "VERIFICANDO…"}</strong>
+              {runtime && <small>{runtime.usage_accounting === "measured" ? "tokens medidos" : "tokens estimados"}</small>}
+            </div>
+          </div>
           <div className="connection">
             <select aria-label="Projeto" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
               {!projects.length && <option value={projectId}>{projectId}</option>}
