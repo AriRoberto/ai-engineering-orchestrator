@@ -14,8 +14,30 @@ function statusClass(status) {
   return `status status-${String(status || "unknown").toLowerCase().replaceAll("_", "-")}`;
 }
 
+function reportMarkdown(execution, projectId) {
+  return [
+    `# Relatório técnico — ${execution.request?.project_id || projectId}`,
+    `Execução: ${execution.id}`,
+    `Estado: ${execution.status}`,
+    `Revisão: ${execution.request?.context?.evidence?.revision || "não informada"}`,
+    "",
+    "## Resultado consolidado",
+    execution.consolidated_result || "Sem resultado consolidado.",
+    "",
+    ...((execution.results || []).flatMap((result) => [
+      `## ${result.agent}`,
+      result.summary,
+      ...(result.findings || []).map((finding) => `- ${finding}`),
+      "",
+    ])),
+    "## Fontes",
+    ...((execution.evidence_sources || []).map((source) => `- ${source}`)),
+  ].join("\n");
+}
+
 function App() {
-  const [projectId, setProjectId] = useState("app-financas");
+  const [projectId, setProjectId] = useState(() =>
+    new URLSearchParams(window.location.search).get("project") || "app-financas");
   const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("aieo-api-key") || "");
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
@@ -32,6 +54,7 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reportAction, setReportAction] = useState("");
 
   async function request(path, options = {}) {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -136,6 +159,13 @@ function App() {
     refresh();
   }, []);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("project", projectId);
+    url.searchParams.set("section", section);
+    window.history.replaceState({}, "", url);
+  }, [projectId, section]);
+
   const sources = executions.flatMap((execution) =>
     (execution.evidence_sources || []).map((source) => ({ execution: execution.id, source })),
   );
@@ -143,25 +173,22 @@ function App() {
 
   async function copyReport() {
     if (!selected) return;
-    const lines = [
-      `# Relatório técnico — ${selected.request?.project_id || projectId}`,
-      `Execução: ${selected.id}`,
-      `Estado: ${selected.status}`,
-      `Revisão: ${selected.request?.context?.evidence?.revision || "não informada"}`,
-      "",
-      "## Resultado consolidado",
-      selected.consolidated_result || "Sem resultado consolidado.",
-      "",
-      ...((selected.results || []).flatMap((result) => [
-        `## ${result.agent}`,
-        result.summary,
-        ...(result.findings || []).map((finding) => `- ${finding}`),
-        "",
-      ])),
-      "## Fontes",
-      ...((selected.evidence_sources || []).map((source) => `- ${source}`)),
-    ];
-    await navigator.clipboard.writeText(lines.join("\n"));
+    await navigator.clipboard.writeText(reportMarkdown(selected, projectId));
+    setReportAction("Relatório copiado.");
+  }
+
+  function downloadReport() {
+    if (!selected) return;
+    const blob = new Blob([reportMarkdown(selected, projectId)], {
+      type: "text/markdown;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `relatorio-${projectId}-${selected.id}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setReportAction("Download Markdown iniciado.");
   }
 
   return (
@@ -169,7 +196,7 @@ function App() {
       <aside>
         <div className="brand"><span>AI</span><strong>Engineering<br />Orchestrator</strong></div>
         <nav>{sections.map(([id, label]) => (
-          <button className={section === id ? "active" : ""} onClick={() => setSection(id)} key={id}>{label}</button>
+          <button className={section === id ? "active" : ""} onClick={() => { setSection(id); setReportAction(""); }} key={id}>{label}</button>
         ))}</nav>
         <a className="grafana" href="http://localhost:3300/d/aieo-overview" target="_blank">Abrir Grafana ↗</a>
       </aside>
@@ -229,6 +256,8 @@ function App() {
           projectId={projectId}
           audit={audits.find((item) => item.execution_id === selected?.id)}
           onCopy={copyReport}
+          onDownload={downloadReport}
+          actionMessage={reportAction}
         />}
 
         {section === "sources" && <section className="panel"><h2>Fontes de evidência</h2>{sources.map((item) => (
@@ -247,7 +276,7 @@ function App() {
   );
 }
 
-function TechnicalReport({ execution, projectId, audit, onCopy }) {
+function TechnicalReport({ execution, projectId, audit, onCopy, onDownload, actionMessage }) {
   if (!execution) return <section className="panel"><Empty text="Selecione ou execute uma análise para gerar o relatório." /></section>;
   const evidence = execution.request?.context?.evidence || {};
   const revision = evidence.revision || audit?.revision || "não informada";
@@ -260,8 +289,9 @@ function TechnicalReport({ execution, projectId, audit, onCopy }) {
   return <article className="technical-report panel">
     <div className="report-heading">
       <div><p className="eyebrow">Relatório técnico</p><h2>{projectId}</h2><p className="report-subtitle">Análise rastreável do repositório · {createdAt}</p></div>
-      <div className="report-actions"><button onClick={onCopy}>Copiar Markdown</button><button className="secondary" onClick={() => window.print()}>Imprimir / PDF</button></div>
+      <div className="report-actions"><button onClick={onCopy}>Copiar Markdown</button><button className="secondary" onClick={onDownload}>Baixar .md</button><button className="secondary" onClick={() => window.print()}>Imprimir / PDF</button></div>
     </div>
+    {actionMessage && <p className="report-feedback" role="status">{actionMessage}</p>}
     <div className="report-summary">
       <div><span>Estado</span><strong className={statusClass(execution.status)}>{execution.status}</strong></div>
       <div><span>Revisão Git</span><code>{revision}</code></div>
