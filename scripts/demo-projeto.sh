@@ -70,8 +70,8 @@ fi
 real_llm=false
 if [[ -n "${openai_key_file}" ]]; then
   real_llm=true
-  if [[ ! -f "${openai_key_file}" || -z "${openai_model}" ]]; then
-    printf -- '--openai-key-file deve existir e --model é obrigatório no modo real.\n' >&2
+  if [[ ! -s "${openai_key_file}" || -z "${openai_model}" ]]; then
+    printf -- '--openai-key-file deve existir, não estar vazio e --model é obrigatório no modo real.\n' >&2
     exit 2
   fi
   permissions="$(stat -f '%Lp' "${openai_key_file}" 2>/dev/null || stat -c '%a' "${openai_key_file}")"
@@ -86,6 +86,7 @@ if [[ -n "${openai_key_file}" ]]; then
   fi
   export AIEO_DEMO_OPENAI_API_KEY_FILE="${openai_key_file}"
   export AIEO_DEMO_OPENAI_MODEL="${openai_model}"
+  export AIEO_DEMO_HOST_UID="$(id -u)"
   compose+=(-f "${root}/compose.demo.openai.yaml")
 elif [[ -n "${openai_model}" ]]; then
   printf -- '--model só pode ser usado com --openai-key-file.\n' >&2
