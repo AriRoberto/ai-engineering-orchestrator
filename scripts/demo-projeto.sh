@@ -8,6 +8,8 @@ branch=""
 prompt="Revise arquitetura, banco de dados, qualidade, segurança, documentação e operação. Cite as evidências e priorize os riscos encontrados."
 include_content=true
 open_browser=false
+private_repository=false
+token_file=""
 base_url="${AIEO_DEMO_BASE_URL:-http://localhost:8000}"
 compose=(docker compose --project-directory "${root}" -f "${root}/compose.yaml" -f "${root}/compose.demo.yaml")
 
@@ -20,6 +22,8 @@ Uso: ./scripts/demo-projeto.sh [opções]
   --branch BRANCH          Branch; por padrão usa a default_branch informada pelo GitHub
   --prompt TEXTO           Pedido da análise
   --metadata-only          Não baixa conteúdo textual dos arquivos
+  --private                Trata o repositório como privado e força somente metadados
+  --token-file CAMINHO     Token GitHub fine-grained somente leitura (exigido com --private)
   --open-browser           Abre a interface no navegador ao concluir (macOS)
   -h, --help               Mostra esta ajuda
 EOF
@@ -32,6 +36,8 @@ while (($#)); do
     --branch) branch="${2:-}"; shift 2 ;;
     --prompt) prompt="${2:-}"; shift 2 ;;
     --metadata-only) include_content=false; shift ;;
+    --private) private_repository=true; include_content=false; shift ;;
+    --token-file) token_file="${2:-}"; shift 2 ;;
     --open-browser) open_browser=true; shift ;;
     -h | --help) usage; exit 0 ;;
     *) printf 'Opção desconhecida: %s\n' "$1" >&2; usage >&2; exit 2 ;;
@@ -68,13 +74,32 @@ if ((${#prompt} < 3 || ${#prompt} > 10000)); then
   exit 2
 fi
 
+visibility="public"
+if [[ "${private_repository}" == true ]]; then
+  visibility="private"
+  if [[ -z "${token_file}" || ! -f "${token_file}" ]]; then
+    printf -- '--token-file deve apontar para um arquivo existente no modo privado.\n' >&2
+    exit 2
+  fi
+  permissions="$(stat -f '%Lp' "${token_file}" 2>/dev/null || stat -c '%a' "${token_file}")"
+  if [[ "${permissions}" != "400" && "${permissions}" != "600" ]]; then
+    printf 'O arquivo do token deve possuir permissão 400 ou 600; atual: %s.\n' \
+      "${permissions}" >&2
+    exit 2
+  fi
+  export AIEO_DEMO_PRIVATE_REPOSITORY="${repository}"
+  export AIEO_DEMO_GITHUB_TOKEN_FILE="${token_file}"
+  compose+=(-f "${root}/compose.demo.private.yaml")
+fi
+
 temp_dir="$(mktemp -d)"
 trap 'rm -rf "${temp_dir}"' EXIT
-printf '1/7 Validando o repositório público %s...\n' "${repository}"
-curl --fail --silent --show-error \
-  -H 'Accept: application/vnd.github+json' \
-  "https://api.github.com/repos/${repository}" >"${temp_dir}/repository.json"
-readarray_values="$({ python3 - "${temp_dir}/repository.json" <<'PY'
+if [[ "${private_repository}" == false ]]; then
+  printf '1/7 Validando o repositório público %s...\n' "${repository}"
+  curl --fail --silent --show-error \
+    -H 'Accept: application/vnd.github+json' \
+    "https://api.github.com/repos/${repository}" >"${temp_dir}/repository.json"
+  readarray_values="$({ python3 - "${temp_dir}/repository.json" <<'PY'
 import json
 import sys
 
@@ -86,9 +111,14 @@ print(payload["owner"]["login"])
 print(payload["default_branch"])
 PY
 } )"
-actual_owner="$(printf '%s\n' "${readarray_values}" | sed -n '1p')"
-default_branch="$(printf '%s\n' "${readarray_values}" | sed -n '2p')"
-branch="${branch:-${default_branch}}"
+  actual_owner="$(printf '%s\n' "${readarray_values}" | sed -n '1p')"
+  default_branch="$(printf '%s\n' "${readarray_values}" | sed -n '2p')"
+  branch="${branch:-${default_branch}}"
+else
+  printf '1/7 Preparando acesso privado de escopo único para %s...\n' "${repository}"
+  actual_owner="${owner}"
+  branch="${branch:-main}"
+fi
 if [[ ! "${branch}" =~ ^[A-Za-z0-9._/-]{1,255}$ || "${branch}" == *..* ]]; then
   printf 'Branch inválida.\n' >&2
   exit 2
@@ -103,12 +133,15 @@ printf '%s\n' \
   "owner: ${actual_owner}" \
   "repository: https://github.com/${repository}" \
   "default_branch: ${branch}" \
-  "visibility: public" \
+  "visibility: ${visibility}" \
   "mode: read-only" \
   "knowledge_namespace: project/${project_id}" \
   "mcp:" \
   "  allowed_tools:" \
   "    - project-catalog:project_summary" >"${config_file}"
+if [[ "${private_repository}" == true ]]; then
+  printf 'authenticated_read_only: true\n' >>"${config_file}"
+fi
 
 printf '3/7 Subindo PostgreSQL e Orquestrador a partir de %s...\n' "${root}"
 port_owner="$(docker ps --filter publish=8000 --format '{{.Label "com.docker.compose.project"}}' | head -1)"
@@ -165,7 +198,7 @@ curl --fail --silent --show-error \
   "${base_url}/v1/evidence/executions" >"${temp_dir}/execution.json"
 
 printf '7/7 Validando resultado e proveniência...\n'
-summary="$(python3 - "${temp_dir}/execution.json" "${project_id}" <<'PY'
+summary="$(python3 - "${temp_dir}/execution.json" "${project_id}" "${visibility}" <<'PY'
 import json
 import sys
 
@@ -179,6 +212,16 @@ evidence = execution.get("request", {}).get("context", {}).get("evidence", {})
 revision = evidence.get("revision", "")
 if len(revision) != 40 or not evidence.get("read_only"):
     raise SystemExit("Proveniência Git ou modo somente leitura inválido")
+expected_visibility = sys.argv[3]
+metadata = evidence.get("metadata", {})
+if metadata.get("visibility") != expected_visibility:
+    raise SystemExit("Visibilidade divergente na evidência")
+if expected_visibility == "private" and metadata.get("authenticated") is not True:
+    raise SystemExit("A coleta privada não confirmou autenticação")
+if expected_visibility == "private" and any(
+    item.get("content_status") != "metadata-only" for item in evidence.get("files", [])
+):
+    raise SystemExit("A demo privada deve coletar somente metadados")
 print(execution["id"])
 print(revision)
 print(len(execution.get("results", [])))
@@ -190,8 +233,32 @@ revision="$(printf '%s\n' "${summary}" | sed -n '2p')"
 agents="$(printf '%s\n' "${summary}" | sed -n '3p')"
 sources="$(printf '%s\n' "${summary}" | sed -n '4p')"
 
+if [[ "${private_repository}" == true ]]; then
+  printf 'Desmontando a credencial e preservando o relatório...\n'
+  public_compose=(
+    docker compose --project-directory "${root}"
+    -f "${root}/compose.yaml" -f "${root}/compose.demo.yaml"
+  )
+  "${public_compose[@]}" up -d --no-deps --force-recreate api >/dev/null
+  for attempt in $(seq 1 30); do
+    if curl --fail --silent "${base_url}/ready" >/dev/null; then break; fi
+    if [[ "${attempt}" == "30" ]]; then
+      printf 'A API não voltou sem a credencial montada.\n' >&2
+      exit 1
+    fi
+    sleep 1
+  done
+  if docker inspect aieo-demo-api-1 \
+    --format '{{range .Mounts}}{{println .Destination}}{{end}}' \
+    | grep -q '/run/secrets/github_private_read_token'; then
+    printf 'A credencial privada permaneceu montada após a coleta.\n' >&2
+    exit 1
+  fi
+fi
+
 printf '\n✓ Demonstração pronta.\n'
 printf 'Projeto: %s (%s)\n' "${project_id}" "${repository}"
+printf 'Visibilidade: %s | Conteúdo textual: %s\n' "${visibility}" "${include_content}"
 printf 'Revisão: %s\n' "${revision}"
 printf 'Execução: %s\n' "${execution_id}"
 printf 'Especialistas: %s | Fontes: %s\n' "${agents}" "${sources}"

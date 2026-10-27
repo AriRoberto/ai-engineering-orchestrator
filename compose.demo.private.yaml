@@ -1,0 +1,13 @@
+name: aieo-demo
+
+services:
+  api:
+    environment:
+      AIEO_GITHUB_PRIVATE_READ_TOKEN_FILE: /run/secrets/github_private_read_token
+      AIEO_GITHUB_PRIVATE_READ_REPOSITORY: ${AIEO_DEMO_PRIVATE_REPOSITORY:?Defina o repositório privado permitido}
+    secrets:
+      - github_private_read_token
+
+secrets:
+  github_private_read_token:
+    file: ${AIEO_DEMO_GITHUB_TOKEN_FILE:?Defina o arquivo do token GitHub somente leitura}
