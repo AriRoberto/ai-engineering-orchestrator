@@ -163,6 +163,7 @@ Piloto público da Fase 4:
 
 - [Plano oficial de implementação](docs/pt-BR/plano-de-implementacao.md)
 - [Coleta governada de evidências](docs/pt-BR/fase-4-piloto-publico.md)
+- [Roteiro de validação do app-financas](docs/pt-BR/roteiro-validacao-app-financas.md)
 - [Laboratório prático da Fase 4](docs/pt-BR/laboratorio-fase4.md)
 - [Avaliação adversarial da Fase 4](docs/pt-BR/avaliacao-adversarial-fase4.md)
 - [Laboratório privado somente leitura](docs/pt-BR/laboratorio-fase4-privado.md)
@@ -266,6 +267,16 @@ templates versionados.
 O laboratório de observabilidade inclui Alertmanager, roteamento por severidade e uma entrega
 sintética ponta a ponta. Para um destino real, monte o arquivo indicado por
 `AIEO_NOTIFICATION_WEBHOOK_FILE`; a URL não é armazenada no Git.
+
+Para uma demonstração local completa do piloto público:
+
+```bash
+make demo
+```
+
+O comando sobe uma stack isolada, analisa `AriRoberto/app-financas`, valida proveniência e deixa a
+UI com um relatório técnico copiável e imprimível. Outro repositório público pode ser usado com
+`make demo REPOSITORY=OWNER/REPOSITORY`.
 
 ## Projetos pilotos
 
