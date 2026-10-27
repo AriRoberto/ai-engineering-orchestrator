@@ -233,7 +233,10 @@ curl --fail --silent http://localhost:8000/ready
 
 **Resultado esperado:** a API retorna uma resposta de prontidão. O projeto estará autorizado para coleta quando `id`, nome do arquivo, URL, proprietário e visibilidade forem consistentes.
 
-> Cadastrar um projeto pela interface web ainda é uma funcionalidade **pendente**. Hoje o cadastro é feito por arquivo YAML e exige acesso aos arquivos do Orquestrador.
+No perfil local de demonstração, também é possível usar **+ Projeto** na interface. Informe um
+repositório público no formato `OWNER/REPO`; o backend consulta o GitHub, confirma que ele é
+público e grava a configuração persistente sempre em `read-only`. O cadastro pela UI permanece
+desabilitado por padrão fora desse perfil e não aceita repositórios privados ou credenciais.
 
 ## 6. Solicitar e acompanhar uma análise
 

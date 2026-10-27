@@ -58,6 +58,9 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [reportAction, setReportAction] = useState("");
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [repositoryInput, setRepositoryInput] = useState("");
+  const [projectIdInput, setProjectIdInput] = useState("");
 
   async function request(path, options = {}) {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -138,6 +141,31 @@ function App() {
       await refresh();
       setSelected(execution);
       setSection("executions");
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function registerProject(event) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const project = await request("/v1/projects", {
+        method: "POST",
+        body: JSON.stringify({
+          repository: repositoryInput.trim(),
+          project_id: projectIdInput.trim() || null,
+        }),
+      });
+      setProjects((current) => [...current.filter((item) => item.id !== project.id), project]
+        .sort((left, right) => left.id.localeCompare(right.id)));
+      setProjectId(project.id);
+      setRepositoryInput("");
+      setProjectIdInput("");
+      setShowProjectForm(false);
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -228,10 +256,17 @@ function App() {
               {projects.map((project) => <option value={project.id} key={project.id}>{project.id}</option>)}
             </select>
             <input aria-label="API key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="X-API-Key" />
+            {runtime?.project_registration_enabled && <button className="secondary" onClick={() => setShowProjectForm((current) => !current)}>+ Projeto</button>}
             <button onClick={refresh} disabled={loading}>{loading ? "Atualizando…" : "Atualizar"}</button>
           </div>
         </header>
         {error && <div className="error">{error}</div>}
+        {showProjectForm && <form className="panel project-form" onSubmit={registerProject}>
+          <div><p className="eyebrow">Cadastro local</p><h2>Adicionar repositório público</h2><small>O GitHub será consultado e o projeto ficará restrito a somente leitura.</small></div>
+          <label>Repositório GitHub<input required value={repositoryInput} onChange={(event) => setRepositoryInput(event.target.value)} placeholder="OWNER/REPO" pattern="[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}" /></label>
+          <label>ID opcional<input value={projectIdInput} onChange={(event) => setProjectIdInput(event.target.value)} placeholder="derivado do repositório" pattern="[a-z0-9][a-z0-9-]{1,62}" /></label>
+          <button type="submit" disabled={loading}>{loading ? "Validando…" : "Validar e cadastrar"}</button>
+        </form>}
         <section className="metrics">
           <article><span>Execuções</span><strong>{executions.length}</strong></article>
           <article><span>Fontes citadas</span><strong>{sources.length}</strong></article>

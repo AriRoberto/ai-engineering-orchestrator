@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     knowledge_chunk_size: int = 800
     knowledge_chunk_overlap: int = 100
     mcp_project_config_dir: str = "configs/projects"
+    project_registration_enabled: bool = False
     github_evidence_timeout_seconds: float = 10.0
     github_private_read_token: SecretStr | None = None
     github_private_read_token_file: str | None = None

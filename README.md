@@ -47,6 +47,7 @@ a Fase 4 integrou evidências governadas e a Fase 5 iniciou a observabilidade di
 | Dashboard Grafana e alertas Prometheus | Implementado — terceiro incremento da Fase 5 |
 | Autenticação, autorização e quotas da API | Implementado — quarto incremento da Fase 5 |
 | Interface React operacional | Implementado — quinto incremento da Fase 5 |
+| Cadastro local de projetos públicos pela UI | Implementado no perfil demo, validado no GitHub e somente leitura |
 | Implantação Kubernetes | Base segura e overlay kind validados em cluster local |
 | SLOs e resposta a incidentes | Implementados localmente; calibração em homologação pendente |
 
@@ -204,6 +205,9 @@ Endpoints atuais:
 - `GET /health`
 - `GET /metrics`
 - `GET /v1/agents`
+- `GET /runtime`
+- `GET /v1/projects`
+- `POST /v1/projects` (somente quando habilitado no perfil local)
 - `POST /v1/executions`
 - `GET /v1/executions?project_id=...`
 - `GET /v1/executions/{id}?project_id=...`
