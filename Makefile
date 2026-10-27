@@ -1,4 +1,4 @@
-.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-homologacao lab-kubernetes-local lab-kubernetes-local-down validar-release regressao-static regressao regressao-full
+.PHONY: install run test lint compose-up compose-up-detached compose-down logs verificar demo lab-fase2 lab-fase3 lab-fase4 lab-fase4-privado eval-fase4 lab-fase5-observabilidade lab-fase5-acesso lab-fase5-kubernetes lab-homologacao lab-kubernetes-local lab-kubernetes-local-down validar-release regressao-static regressao regressao-full
 
 install:
 	python -m pip install -e '.[dev]'
@@ -26,6 +26,9 @@ logs:
 
 verificar:
 	./scripts/verificar-ambiente.sh
+
+demo:
+	./scripts/demo-projeto.sh --repository "$(or $(REPOSITORY),AriRoberto/app-financas)" $(if $(PROJECT_ID),--project-id "$(PROJECT_ID)",) $(if $(BRANCH),--branch "$(BRANCH)",) $(if $(PROMPT),--prompt "$(PROMPT)",)
 
 lab-fase2:
 	./scripts/laboratorio-fase2.sh

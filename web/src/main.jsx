@@ -4,6 +4,7 @@ import "./styles.css";
 
 const sections = [
   ["executions", "Execuções"],
+  ["report", "Relatório técnico"],
   ["sources", "Fontes"],
   ["approvals", "Aprovações"],
   ["audits", "Auditoria"],
@@ -21,7 +22,10 @@ function App() {
   const [prompt, setPrompt] = useState("");
   const [preferredAgents, setPreferredAgents] = useState([]);
   const [includeContent, setIncludeContent] = useState(false);
-  const [section, setSection] = useState("executions");
+  const [section, setSection] = useState(() => {
+    const requested = new URLSearchParams(window.location.search).get("section");
+    return sections.some(([id]) => id === requested) ? requested : "executions";
+  });
   const [executions, setExecutions] = useState([]);
   const [invocations, setInvocations] = useState([]);
   const [audits, setAudits] = useState([]);
@@ -137,6 +141,29 @@ function App() {
   );
   const pending = invocations.filter((item) => item.status === "WAITING_APPROVAL");
 
+  async function copyReport() {
+    if (!selected) return;
+    const lines = [
+      `# Relatório técnico — ${selected.request?.project_id || projectId}`,
+      `Execução: ${selected.id}`,
+      `Estado: ${selected.status}`,
+      `Revisão: ${selected.request?.context?.evidence?.revision || "não informada"}`,
+      "",
+      "## Resultado consolidado",
+      selected.consolidated_result || "Sem resultado consolidado.",
+      "",
+      ...((selected.results || []).flatMap((result) => [
+        `## ${result.agent}`,
+        result.summary,
+        ...(result.findings || []).map((finding) => `- ${finding}`),
+        "",
+      ])),
+      "## Fontes",
+      ...((selected.evidence_sources || []).map((source) => `- ${source}`)),
+    ];
+    await navigator.clipboard.writeText(lines.join("\n"));
+  }
+
   return (
     <div className="shell">
       <aside>
@@ -197,6 +224,13 @@ function App() {
           </> : <Empty />}</div>
         </section>}
 
+        {section === "report" && <TechnicalReport
+          execution={selected}
+          projectId={projectId}
+          audit={audits.find((item) => item.execution_id === selected?.id)}
+          onCopy={copyReport}
+        />}
+
         {section === "sources" && <section className="panel"><h2>Fontes de evidência</h2>{sources.map((item) => (
           <a className="source" href={item.source} target="_blank" key={`${item.execution}-${item.source}`}><span>{item.source}</span><small>execução {item.execution}</small></a>
         ))}{!sources.length && <Empty />}</section>}
@@ -211,6 +245,45 @@ function App() {
       </main>
     </div>
   );
+}
+
+function TechnicalReport({ execution, projectId, audit, onCopy }) {
+  if (!execution) return <section className="panel"><Empty text="Selecione ou execute uma análise para gerar o relatório." /></section>;
+  const evidence = execution.request?.context?.evidence || {};
+  const revision = evidence.revision || audit?.revision || "não informada";
+  const createdAt = execution.created_at
+    ? new Date(execution.created_at).toLocaleString("pt-BR")
+    : "não informado";
+  const findingCount = (execution.results || []).reduce(
+    (total, result) => total + (result.findings?.length || 0), 0,
+  );
+  return <article className="technical-report panel">
+    <div className="report-heading">
+      <div><p className="eyebrow">Relatório técnico</p><h2>{projectId}</h2><p className="report-subtitle">Análise rastreável do repositório · {createdAt}</p></div>
+      <div className="report-actions"><button onClick={onCopy}>Copiar Markdown</button><button className="secondary" onClick={() => window.print()}>Imprimir / PDF</button></div>
+    </div>
+    <div className="report-summary">
+      <div><span>Estado</span><strong className={statusClass(execution.status)}>{execution.status}</strong></div>
+      <div><span>Revisão Git</span><code>{revision}</code></div>
+      <div><span>Especialistas</span><strong>{execution.results?.length || 0}</strong></div>
+      <div><span>Achados</span><strong>{findingCount}</strong></div>
+      <div><span>Fontes</span><strong>{execution.evidence_sources?.length || 0}</strong></div>
+      <div><span>Acesso</span><strong>{evidence.read_only === false ? "escrita" : "somente leitura"}</strong></div>
+    </div>
+    {execution.results?.some((result) => result.simulated) && <p className="report-notice">Resultado gerado em modo simulado. Valida orquestração e rastreabilidade; não representa parecer de um LLM externo.</p>}
+    <section className="report-section"><h3>Escopo solicitado</h3><p>{execution.request?.prompt}</p></section>
+    <section className="report-section"><h3>Resultado consolidado</h3><pre>{execution.consolidated_result || "Sem resultado consolidado."}</pre></section>
+    <section className="report-section"><h3>Análise por especialidade</h3><div className="specialist-grid">{(execution.results || []).map((result) => <article className="specialist" key={result.agent}>
+      <div className="specialist-heading"><h4>{result.agent}</h4><span>{result.findings?.length || 0} achados</span></div>
+      <p>{result.summary}</p>
+      {!!result.findings?.length && <ul>{result.findings.map((finding, index) => <li key={`${result.agent}-${index}`}>{finding}</li>)}</ul>}
+      {!!result.evidence?.length && <details><summary>Evidências do especialista</summary><ul>{result.evidence.map((item, index) => <li key={`${result.agent}-evidence-${index}`}>{item}</li>)}</ul></details>}
+    </article>)}</div></section>
+    <section className="report-section"><h3>Proveniência</h3><dl className="provenance">
+      <dt>Execução</dt><dd>{execution.id}</dd><dt>Projeto</dt><dd>{execution.request?.project_id}</dd><dt>Revisão</dt><dd><code>{revision}</code></dd><dt>Auditoria</dt><dd>{audit?.status || "não localizada"}</dd><dt>Visibilidade</dt><dd>{audit?.visibility || evidence.visibility || "não informada"}</dd>
+    </dl></section>
+    <section className="report-section"><h3>Fontes consultadas</h3>{(execution.evidence_sources || []).map((source) => <a className="source" href={source} target="_blank" key={source}>{source}</a>)}{!execution.evidence_sources?.length && <Empty text="Nenhuma fonte registrada." />}</section>
+  </article>;
 }
 
 function Empty({ text = "Nenhum registro encontrado para este projeto." }) {
