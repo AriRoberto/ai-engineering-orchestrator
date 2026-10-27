@@ -323,6 +323,38 @@ Na interface:
 O resultado é uma análise controlada dos arquivos coletados. Como o provedor é simulado, esta etapa
 valida a orquestração e a rastreabilidade, não a qualidade de um modelo externo pago.
 
+### Validação opcional com OpenAI real
+
+Este passo faz chamada externa e pode gerar cobrança. Não coloque a chave em `.env`, no comando ou
+no Git; grave-a em arquivo de permissão restrita:
+
+```bash
+mkdir -p "$HOME/.config/aieo"
+read -rsp 'Chave OpenAI: ' AIEO_KEY_INPUT; printf '\n'
+printf '%s' "$AIEO_KEY_INPUT" > "$HOME/.config/aieo/openai-api-key"
+unset AIEO_KEY_INPUT
+chmod 600 "$HOME/.config/aieo/openai-api-key"
+
+make demo-openai \
+  OPENAI_KEY_FILE="$HOME/.config/aieo/openai-api-key" \
+  MODEL="gpt-5.6-luna" \
+  REPOSITORY="AriRoberto/app-financas"
+```
+
+Substitua o modelo caso ele não esteja habilitado na sua conta. O script sobe PostgreSQL e API,
+monta a chave somente como Docker secret, executa a análise e exige na resposta:
+
+- `llm_usage.provider` igual a `openai-agents`;
+- `llm_usage.estimated` igual a `false`;
+- tokens de entrada e saída medidos pelo SDK.
+
+Na UI, **Relatório técnico** mostra provedor, modelo e tokens. Para encerrar e desmontar o segredo:
+
+```bash
+docker compose -p aieo-demo -f compose.yaml -f compose.demo.yaml \
+  -f compose.demo.openai.yaml down
+```
+
 ## 8. Fazer a mesma análise pelo terminal
 
 ```bash

@@ -104,7 +104,17 @@ knowledge_service = KnowledgeService(
     settings.knowledge_chunk_size,
     settings.knowledge_chunk_overlap,
 )
-llm_provider = build_llm_provider(settings.llm_provider, settings.llm_model)
+llm_provider = build_llm_provider(
+    settings.llm_provider,
+    settings.llm_model,
+    api_key=(
+        settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
+    ),
+    api_key_file=settings.openai_api_key_file,
+    timeout_seconds=settings.llm_timeout_seconds,
+    store_responses=settings.llm_store_responses,
+    tracing_enabled=settings.llm_tracing_enabled,
+)
 mcp_audit_repository = (
     PostgresMCPAuditRepository(settings.database_url)
     if settings.database_url

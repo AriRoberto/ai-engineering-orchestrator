@@ -2,6 +2,7 @@ from ai_engineering.evidence.github import UrllibGitHubTreeTransport
 from ai_engineering.security.credentials import (
     FileGitHubTokenProvider,
     ScopedGitHubTokenProvider,
+    read_secret_file,
 )
 
 
@@ -49,3 +50,12 @@ def test_file_provider_fails_closed_for_missing_or_oversized_secret(tmp_path) ->
 
     assert missing.token_for("AriRoberto", "app-ams") is None
     assert oversized.token_for("AriRoberto", "app-ams") is None
+
+
+def test_secret_file_reader_strips_value_and_fails_closed(tmp_path) -> None:
+    secret_file = tmp_path / "secret"
+    secret_file.write_text("  protected-value\n", encoding="utf-8")
+
+    assert read_secret_file(str(secret_file)) == "protected-value"
+    assert read_secret_file(str(tmp_path / "missing")) is None
+    assert "protected-value" not in repr(FileGitHubTokenProvider(str(secret_file), "o/r"))

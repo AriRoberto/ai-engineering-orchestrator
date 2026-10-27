@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     database_url: str | None = None
     llm_provider: str = "simulated"
     llm_model: str = "gpt-6-astra"
+    openai_api_key: SecretStr | None = None
+    openai_api_key_file: str | None = None
+    llm_timeout_seconds: float = 60.0
+    llm_store_responses: bool = False
+    llm_tracing_enabled: bool = False
     llm_planning_enabled: bool = True
     max_llm_input_tokens: int = 4_000
     max_llm_output_tokens: int = 1_000

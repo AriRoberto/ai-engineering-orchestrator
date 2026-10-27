@@ -10,6 +10,8 @@ include_content=true
 open_browser=false
 private_repository=false
 token_file=""
+openai_key_file=""
+openai_model=""
 base_url="${AIEO_DEMO_BASE_URL:-http://localhost:8000}"
 compose=(docker compose --project-directory "${root}" -f "${root}/compose.yaml" -f "${root}/compose.demo.yaml")
 
@@ -24,6 +26,8 @@ Uso: ./scripts/demo-projeto.sh [opções]
   --metadata-only          Não baixa conteúdo textual dos arquivos
   --private                Trata o repositório como privado e força somente metadados
   --token-file CAMINHO     Token GitHub fine-grained somente leitura (exigido com --private)
+  --openai-key-file ARQ    Ativa o LLM real com a chave OpenAI lida deste arquivo
+  --model MODELO           Modelo OpenAI (obrigatório com --openai-key-file)
   --open-browser           Abre a interface no navegador ao concluir (macOS)
   -h, --help               Mostra esta ajuda
 EOF
@@ -38,6 +42,8 @@ while (($#)); do
     --metadata-only) include_content=false; shift ;;
     --private) private_repository=true; include_content=false; shift ;;
     --token-file) token_file="${2:-}"; shift 2 ;;
+    --openai-key-file) openai_key_file="${2:-}"; shift 2 ;;
+    --model) openai_model="${2:-}"; shift 2 ;;
     --open-browser) open_browser=true; shift ;;
     -h | --help) usage; exit 0 ;;
     *) printf 'Opção desconhecida: %s\n' "$1" >&2; usage >&2; exit 2 ;;
@@ -58,6 +64,31 @@ docker info >/dev/null 2>&1 || {
 
 if [[ ! "${repository}" =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}$ ]]; then
   printf 'Repositório inválido; use OWNER/REPO.\n' >&2
+  exit 2
+fi
+
+real_llm=false
+if [[ -n "${openai_key_file}" ]]; then
+  real_llm=true
+  if [[ ! -f "${openai_key_file}" || -z "${openai_model}" ]]; then
+    printf -- '--openai-key-file deve existir e --model é obrigatório no modo real.\n' >&2
+    exit 2
+  fi
+  permissions="$(stat -f '%Lp' "${openai_key_file}" 2>/dev/null || stat -c '%a' "${openai_key_file}")"
+  if [[ "${permissions}" != "400" && "${permissions}" != "600" ]]; then
+    printf 'O arquivo da chave OpenAI deve possuir permissão 400 ou 600; atual: %s.\n' \
+      "${permissions}" >&2
+    exit 2
+  fi
+  if [[ ! "${openai_model}" =~ ^[A-Za-z0-9._-]{2,100}$ ]]; then
+    printf 'Nome de modelo OpenAI inválido.\n' >&2
+    exit 2
+  fi
+  export AIEO_DEMO_OPENAI_API_KEY_FILE="${openai_key_file}"
+  export AIEO_DEMO_OPENAI_MODEL="${openai_model}"
+  compose+=(-f "${root}/compose.demo.openai.yaml")
+elif [[ -n "${openai_model}" ]]; then
+  printf -- '--model só pode ser usado com --openai-key-file.\n' >&2
   exit 2
 fi
 owner="${repository%%/*}"
@@ -198,7 +229,7 @@ curl --fail --silent --show-error \
   "${base_url}/v1/evidence/executions" >"${temp_dir}/execution.json"
 
 printf '7/7 Validando resultado e proveniência...\n'
-summary="$(python3 - "${temp_dir}/execution.json" "${project_id}" "${visibility}" <<'PY'
+summary="$(python3 - "${temp_dir}/execution.json" "${project_id}" "${visibility}" "${real_llm}" <<'PY'
 import json
 import sys
 
@@ -222,16 +253,26 @@ if expected_visibility == "private" and any(
     item.get("content_status") != "metadata-only" for item in evidence.get("files", [])
 ):
     raise SystemExit("A demo privada deve coletar somente metadados")
+usage = execution.get("llm_usage") or {}
+real_llm = sys.argv[4] == "true"
+if real_llm and (usage.get("provider") != "openai-agents" or usage.get("estimated") is not False):
+    raise SystemExit("A execução não confirmou consumo real do OpenAI Agents SDK")
+if not real_llm and usage.get("provider") != "simulated":
+    raise SystemExit("A demo segura deveria usar o provedor simulado")
 print(execution["id"])
 print(revision)
 print(len(execution.get("results", [])))
 print(len(execution.get("evidence_sources", [])))
+print(usage.get("provider", "desconhecido"))
+print(usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
 PY
 )"
 execution_id="$(printf '%s\n' "${summary}" | sed -n '1p')"
 revision="$(printf '%s\n' "${summary}" | sed -n '2p')"
 agents="$(printf '%s\n' "${summary}" | sed -n '3p')"
 sources="$(printf '%s\n' "${summary}" | sed -n '4p')"
+llm_provider="$(printf '%s\n' "${summary}" | sed -n '5p')"
+llm_tokens="$(printf '%s\n' "${summary}" | sed -n '6p')"
 
 if [[ "${private_repository}" == true ]]; then
   printf 'Desmontando a credencial e preservando o relatório...\n'
@@ -239,6 +280,9 @@ if [[ "${private_repository}" == true ]]; then
     docker compose --project-directory "${root}"
     -f "${root}/compose.yaml" -f "${root}/compose.demo.yaml"
   )
+  if [[ "${real_llm}" == true ]]; then
+    public_compose+=(-f "${root}/compose.demo.openai.yaml")
+  fi
   "${public_compose[@]}" up -d --no-deps --force-recreate api >/dev/null
   for attempt in $(seq 1 30); do
     if curl --fail --silent "${base_url}/ready" >/dev/null; then break; fi
@@ -262,9 +306,14 @@ printf 'Visibilidade: %s | Conteúdo textual: %s\n' "${visibility}" "${include_c
 printf 'Revisão: %s\n' "${revision}"
 printf 'Execução: %s\n' "${execution_id}"
 printf 'Especialistas: %s | Fontes: %s\n' "${agents}" "${sources}"
+printf 'LLM: %s | Tokens contabilizados: %s\n' "${llm_provider}" "${llm_tokens}"
 printf 'UI: %s/ui/\n' "${base_url}"
 printf 'Relatório: %s/ui/?project=%s&section=report\n' "${base_url}" "${project_id}"
-printf 'Encerrar: docker compose -f compose.yaml -f compose.demo.yaml down\n'
+if [[ "${real_llm}" == true ]]; then
+  printf 'Encerrar: docker compose -p aieo-demo -f compose.yaml -f compose.demo.yaml -f compose.demo.openai.yaml down\n'
+else
+  printf 'Encerrar: docker compose -p aieo-demo -f compose.yaml -f compose.demo.yaml down\n'
+fi
 
 if [[ "${open_browser}" == true ]]; then
   open "${base_url}/ui/?project=${project_id}&section=report"

@@ -1,0 +1,14 @@
+name: aieo-demo
+
+services:
+  api:
+    environment:
+      AIEO_LLM_PROVIDER: openai-agents
+      AIEO_LLM_MODEL: ${AIEO_DEMO_OPENAI_MODEL:?Defina AIEO_DEMO_OPENAI_MODEL}
+      AIEO_OPENAI_API_KEY_FILE: /run/secrets/openai_api_key
+    secrets:
+      - openai_api_key
+
+secrets:
+  openai_api_key:
+    file: ${AIEO_DEMO_OPENAI_API_KEY_FILE:?Defina AIEO_DEMO_OPENAI_API_KEY_FILE}
