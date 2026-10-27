@@ -17,6 +17,20 @@ def test_health() -> None:
     assert len(response.headers["X-Trace-ID"]) == 32
 
 
+def test_runtime_identifies_active_llm_without_exposing_credentials() -> None:
+    response = client.get("/runtime")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "llm_mode": "simulated",
+        "llm_provider": "simulated",
+        "llm_model": "deterministic-demo",
+        "external_api": False,
+        "usage_accounting": "estimated",
+    }
+    assert "key" not in response.text.casefold()
+
+
 def test_readiness() -> None:
     response = client.get("/ready")
 
