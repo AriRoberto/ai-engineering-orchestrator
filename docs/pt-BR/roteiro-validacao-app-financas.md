@@ -255,6 +255,23 @@ Exemplo com ID, branch e pedido explícitos:
 O repositório precisa ser público. A configuração temporária fica em `.aieo-demo/`, ignorada pelo
 Git, e continua impondo `read-only`. O script não executa nem modifica o projeto analisado.
 
+### Demonstração de repositório privado
+
+Use somente um token GitHub fine-grained temporário, limitado a um único repositório e com
+`Contents: Read-only`, salvo fora do projeto com permissão `600` ou `400`:
+
+```bash
+make demo-private \
+  REPOSITORY=OWNER/REPOSITORY \
+  TOKEN_FILE="$HOME/.config/aieo/github-token-somente-leitura"
+```
+
+Nesse modo, o secret é montado como arquivo, fica escopado ao `OWNER/REPOSITORY` informado e a
+coleta é forçada para somente metadados. O script exige que a API do GitHub confirme visibilidade
+privada e autenticação antes de aprovar o resultado. O token não entra no YAML temporário, na
+execução, no relatório ou nos logs da aplicação. Concluída a coleta, a API é recriada sem o secret
+montado; a execução e o relatório permanecem disponíveis no PostgreSQL para a apresentação.
+
 ## 6. Confirmar os serviços ativos
 
 ```bash
