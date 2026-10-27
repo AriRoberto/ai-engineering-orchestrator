@@ -1,0 +1,13 @@
+name: aieo-demo
+
+services:
+  api:
+    environment:
+      AIEO_ENVIRONMENT: development
+      AIEO_API_AUTH_ENABLED: "false"
+      AIEO_DEMO_MODE: "true"
+      AIEO_LLM_PROVIDER: simulated
+      AIEO_DATABASE_URL: postgresql+psycopg://aieo:aieo@postgres:5432/aieo
+      AIEO_MCP_PROJECT_CONFIG_DIR: /app/configs/projects
+    volumes:
+      - ./.aieo-demo/projects:/app/configs/projects:ro
