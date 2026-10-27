@@ -157,6 +157,12 @@ indisponibilidade, taxa de erro 5xx e latência p95. Dashboard, datasource e ale
 versionados. O acesso anônimo `Viewer` é restrito ao laboratório local e não representa configuração
 de produção.
 
+O Prometheus encaminha alertas ao Alertmanager, que agrupa por alerta, serviço e severidade, inibe
+avisos quando há um incidente crítico equivalente e entrega por webhook. A URL é lida de arquivo
+montado em `/run/secrets`, nunca do YAML versionado. O laboratório envia um alerta sintético e
+confirma a entrega ponta a ponta; em ambiente externo, esse arquivo deve vir do secret manager e
+apontar para o serviço gerenciado de incidentes ou comunicação.
+
 ## Controle de acesso da API
 
 Quando habilitado, `APIAccessController` protege todos os endpoints `/v1`. O modo `api_key` é a

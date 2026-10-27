@@ -101,6 +101,12 @@ O preflight rejeita kind, Docker Desktop e minikube; confirma os CRDs do Externa
 cert-manager, `ClusterSecretStore`, `ClusterIssuer`, IngressClass, StorageClass, resolução DNS e a
 existência dos dois digests nos registries.
 
+Na plataforma de observabilidade gerenciada, importe `observability/rules/`, conecte o Prometheus
+ao Alertmanager e monte a URL do destino como arquivo secreto, seguindo o contrato de
+`observability/alertmanager.yml`. Antes da abertura de tráfego, envie um alerta sintético e confirme
+recebimento e resolução no canal de incidentes. A URL real não deve entrar no repositório nem no
+manifest renderizado.
+
 ## Gate anterior à implantação externa
 
 Não execute `kubectl apply` enquanto qualquer item abaixo estiver ausente:
