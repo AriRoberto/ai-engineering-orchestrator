@@ -54,6 +54,24 @@ def test_postgres_snapshot_is_atomic_idempotent_and_isolated(monkeypatch):
         assert restored.start_line == chunks[0].start_line
         assert restored.content == chunks[0].content
         assert restored.embedding == pytest.approx(chunks[0].embedding)
+        hits = service.search(project_id, "Manual seguro", 5, False)
+        assert hits[0].document_id == manual.id
+        assert all(hit.document_id != other.entries[0][0].id for hit in hits)
+        alternate = snapshot.with_embeddings(DeterministicEmbeddingProvider(32))
+        alternate.publish(repository)
+        alternate_service = KnowledgeService(
+            repository, DeterministicEmbeddingProvider(32), KnowledgeContentGuard()
+        )
+        alternate_hits = alternate_service.search(project_id, "arquitetura", 5, False)
+        assert alternate_hits
+        assert all(
+            hit.document_id in {doc.id for doc, _chunks in alternate.entries}
+            for hit in alternate_hits
+        )
+        assert all(
+            hit.document_id not in {doc.id for doc, _chunks in alternate.entries}
+            for hit in service.search(project_id, "arquitetura", 5, False)
+        )
         existing_ids = {doc.id for doc, _chunk in repository.chunks_for(project_id, False)}
         changed = document.model_copy(update={"id": uuid4()}, deep=True)
         changed_chunks = [

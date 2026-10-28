@@ -10,6 +10,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from ai_engineering.knowledge.embeddings import EmbeddingProvider, validate_vectors
 from ai_engineering.knowledge.models import (
     KnowledgeChunk,
     KnowledgeDocument,
@@ -61,12 +62,14 @@ class RepositorySnapshot:
     entries: list[tuple[KnowledgeDocument, list[KnowledgeChunk]]]
     files: list[dict]
     working_tree_dirty: bool
+    embedding_key: str = "deterministic:deterministic-demo:1:16"
 
     def report(self) -> dict:
         return {
             "project_id": self.project_id,
             "collection": self.collection,
             "revision": self.revision,
+            "embedding_key": self.embedding_key,
             "working_tree_dirty": self.working_tree_dirty,
             "documents": len(self.entries),
             "chunks": sum(len(chunks) for _document, chunks in self.entries),
@@ -76,7 +79,49 @@ class RepositorySnapshot:
     def publish(self, repository: KnowledgeRepository, allow_empty: bool = False) -> dict[str, int]:
         if not self.entries and not allow_empty:
             raise ValueError("Coleção vazia: use --allow-empty para autorizar sua remoção")
-        return repository.sync_collection(self.project_id, self.collection, self.entries)
+        return repository.sync_collection(
+            self.project_id, self.collection, self.entries, self.embedding_key
+        )
+
+    def with_embeddings(self, provider: EmbeddingProvider) -> "RepositorySnapshot":
+        parts = [chunk for _document, chunks in self.entries for chunk in chunks]
+        vectors = provider.embed_many([chunk.content for chunk in parts])
+        validate_vectors(vectors, len(parts), provider.dimensions)
+        entries = []
+        offset = 0
+        for document, chunks in self.entries:
+            updated = document.model_copy(deep=True)
+            updated.embedding_key = provider.key
+            updated.provenance.embedding_model = provider.model
+            updated.provenance.embedding_dimensions = provider.dimensions
+            updated.provenance.embedding_version = provider.version
+            identity = json.dumps(
+                updated.provenance.model_dump(exclude={"revision"}), sort_keys=True
+            )
+            updated.id = uuid5(NAMESPACE_URL, updated.source + identity)
+            converted = []
+            for chunk in chunks:
+                converted.append(
+                    chunk.model_copy(
+                        update={
+                            "id": uuid5(updated.id, str(chunk.position)),
+                            "document_id": updated.id,
+                            "embedding": vectors[offset],
+                        },
+                        deep=True,
+                    )
+                )
+                offset += 1
+            entries.append((updated, converted))
+        return RepositorySnapshot(
+            self.project_id,
+            self.collection,
+            self.revision,
+            entries,
+            self.files,
+            self.working_tree_dirty,
+            provider.key,
+        )
 
 
 def line_chunks(content: str, size: int) -> list[tuple[str, int, int]]:
@@ -283,12 +328,15 @@ def main() -> None:
         if arguments.apply:
             from ai_engineering.infrastructure.settings import Settings
             from ai_engineering.knowledge.database import PostgresKnowledgeRepository
+            from ai_engineering.knowledge.embeddings import build_embedding_provider
 
             settings = Settings()
             if not settings.database_url:
                 raise ValueError("AIEO_DATABASE_URL é obrigatória para --apply")
-            if settings.embedding_dimensions != 16:
-                raise ValueError("Esta etapa exige embeddings de demonstração com 16 dimensões")
+            provider = build_embedding_provider(settings)
+            if provider.key != snapshot.embedding_key:
+                snapshot = snapshot.with_embeddings(provider)
+            report["embedding_key"] = snapshot.embedding_key
             repository = PostgresKnowledgeRepository(settings.database_url)
             report["sync"] = snapshot.publish(repository, arguments.allow_empty)
         print(json.dumps(report, ensure_ascii=False, indent=2))

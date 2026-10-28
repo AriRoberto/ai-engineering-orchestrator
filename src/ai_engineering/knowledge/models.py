@@ -57,6 +57,7 @@ class KnowledgeDocument(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     collection: str | None = None
     provenance: KnowledgeProvenance | None = None
+    embedding_key: str = "deterministic:deterministic-demo:1:16"
 
 
 class SearchHit(BaseModel):

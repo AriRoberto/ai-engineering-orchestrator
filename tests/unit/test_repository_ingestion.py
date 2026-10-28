@@ -173,3 +173,19 @@ def test_scanning_subdirectory_keeps_complete_repository_scope(repository_tree):
         document.id for document, _chunks in root_snapshot.entries
     }
     assert len(nested_snapshot.entries) == 3
+
+
+def test_reembedding_preserves_demo_index_and_failed_rebuild(repository_tree):
+    snapshot = RepositoryScanner(repository_tree, "project-one").scan()
+    repository = InMemoryKnowledgeRepository()
+    snapshot.publish(repository)
+    alternate = snapshot.with_embeddings(DeterministicEmbeddingProvider(32))
+    alternate.publish(repository)
+    assert len(repository.documents) == 4
+    assert alternate.publish(repository)["unchanged"] == 2
+    assert len(repository.documents) == 4
+    assert snapshot.embedding_key != alternate.embedding_key
+    for document, chunks in alternate.entries:
+        assert document.provenance.embedding_dimensions == 32
+        assert all(len(chunk.embedding) == 32 for chunk in chunks)
+    assert snapshot.publish(repository)["unchanged"] == 2
