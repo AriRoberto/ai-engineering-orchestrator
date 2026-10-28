@@ -231,6 +231,10 @@ credenciais externas separadas e política inicialmente somente leitura. Novos a
 
 ## LLM, MCP e Agentic RAG
 
+Para indexar uma revisão Git local com prévia, proveniência e publicação idempotente,
+consulte o [guia de ingestão RAG de repositórios](docs/pt-BR/rag-repositorio.md).
+Esta etapa mantém os embeddings de demonstração de 16 dimensões.
+
 A fundação da Fase 2 inclui um contrato configurável de LLM, provedor simulado e integração opcional
 com o OpenAI Agents SDK via Responses API. A integração real recebe a chave por Docker secret, limita
 tokens e tempo, desativa armazenamento e tracing por padrão e registra o consumo retornado pelo SDK.

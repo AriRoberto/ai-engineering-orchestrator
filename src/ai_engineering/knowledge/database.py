@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
@@ -13,6 +14,8 @@ from sqlalchemy import (
     delete,
     or_,
     select,
+    text,
+    update,
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
@@ -21,8 +24,10 @@ from ai_engineering.knowledge.models import (
     FeedbackCreate,
     KnowledgeChunk,
     KnowledgeDocument,
+    KnowledgeProvenance,
     KnowledgeScope,
 )
+from ai_engineering.knowledge.service import collection_counts, validate_collection
 
 
 class Base(DeclarativeBase):
@@ -39,6 +44,8 @@ class DocumentRow(Base):
     sharing_authorized: Mapped[bool] = mapped_column(Boolean, default=False)
     chunk_count: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    collection: Mapped[str | None] = mapped_column(String(63), nullable=True)
+    provenance: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class ChunkRow(Base):
@@ -52,6 +59,8 @@ class ChunkRow(Base):
     content: Mapped[str] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer)
     embedding: Mapped[list[float]] = mapped_column(Vector(16))
+    start_line: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    end_line: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class FeedbackRow(Base):
@@ -73,30 +82,67 @@ class PostgresKnowledgeRepository:
 
     def add(self, document: KnowledgeDocument, chunks: list[KnowledgeChunk]) -> None:
         with Session(self.engine) as session, session.begin():
-            document_row = DocumentRow(
-                id=document.id,
-                project_id=document.project_id,
-                title=document.title,
-                source=document.source,
-                scope=document.scope.value,
-                sharing_authorized=document.sharing_authorized,
-                chunk_count=document.chunks,
-                created_at=document.created_at,
+            self._add(session, document, chunks)
+
+    @staticmethod
+    def _add(session, document, chunks):
+        document_row = DocumentRow(
+            id=document.id,
+            project_id=document.project_id,
+            title=document.title,
+            source=document.source,
+            scope=document.scope.value,
+            sharing_authorized=document.sharing_authorized,
+            chunk_count=document.chunks,
+            created_at=document.created_at,
+            collection=document.collection,
+            provenance=document.provenance.model_dump() if document.provenance else None,
+        )
+        session.add(document_row)
+        session.flush()
+        session.add_all(
+            ChunkRow(
+                id=chunk.id,
+                document_id=chunk.document_id,
+                project_id=chunk.project_id,
+                scope=chunk.scope.value,
+                content=chunk.content,
+                position=chunk.position,
+                embedding=chunk.embedding,
+                start_line=chunk.start_line,
+                end_line=chunk.end_line,
             )
-            session.add(document_row)
-            session.flush()
-            session.add_all(
-                ChunkRow(
-                    id=chunk.id,
-                    document_id=chunk.document_id,
-                    project_id=chunk.project_id,
-                    scope=chunk.scope.value,
-                    content=chunk.content,
-                    position=chunk.position,
-                    embedding=chunk.embedding,
+            for chunk in chunks
+        )
+
+    def sync_collection(self, project_id, collection, entries):
+        validate_collection(project_id, collection, entries)
+        incoming = {document.id for document, _chunks in entries}
+        with Session(self.engine) as session, session.begin():
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtext(:scope))"),
+                {"scope": f"knowledge:{project_id}:{collection}"},
+            )
+            existing = set(
+                session.scalars(
+                    select(DocumentRow.id).where(
+                        DocumentRow.project_id == project_id, DocumentRow.collection == collection
+                    )
                 )
-                for chunk in chunks
             )
+            removed = existing - incoming
+            if removed:
+                session.execute(delete(DocumentRow).where(DocumentRow.id.in_(removed)))
+            for document, chunks in entries:
+                if document.id not in existing:
+                    self._add(session, document, chunks)
+                else:
+                    session.execute(
+                        update(DocumentRow)
+                        .where(DocumentRow.id == document.id)
+                        .values(provenance=document.provenance.model_dump())
+                    )
+        return collection_counts(existing, incoming)
 
     def get_document(self, document_id: UUID, project_id: str):
         with Session(self.engine) as session:
@@ -147,6 +193,8 @@ class PostgresKnowledgeRepository:
             sharing_authorized=row.sharing_authorized,
             chunks=row.chunk_count,
             created_at=row.created_at,
+            collection=row.collection,
+            provenance=KnowledgeProvenance(**row.provenance) if row.provenance else None,
         )
 
     @staticmethod
@@ -159,4 +207,6 @@ class PostgresKnowledgeRepository:
             content=row.content,
             position=row.position,
             embedding=list(row.embedding),
+            start_line=row.start_line,
+            end_line=row.end_line,
         )
