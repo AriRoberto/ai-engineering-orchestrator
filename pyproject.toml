@@ -58,3 +58,6 @@ line-length = 100
 select = ["E", "F", "I", "B", "UP", "S"]
 ignore = ["S101"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/ai_engineering/knowledge/repository_ingestion.py" = ["S603"]
+"tests/unit/test_repository_ingestion.py" = ["S603", "S607"]

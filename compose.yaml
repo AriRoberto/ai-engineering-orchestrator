@@ -11,6 +11,8 @@ services:
       - ./migrations/002_phase2_executions.sql:/docker-entrypoint-initdb.d/002_phase2_executions.sql:ro
       - ./migrations/003_phase2_mcp_audit.sql:/docker-entrypoint-initdb.d/003_phase2_mcp_audit.sql:ro
       - ./migrations/004_phase4_evidence_audit.sql:/docker-entrypoint-initdb.d/004_phase4_evidence_audit.sql:ro
+      - ./migrations/005_repository_knowledge.sql:/docker-entrypoint-initdb.d/005_repository_knowledge.sql:ro
+      - ./migrations/006_semantic_knowledge.sql:/docker-entrypoint-initdb.d/006_semantic_knowledge.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aieo -d aieo"]
       interval: 5s
@@ -29,6 +31,11 @@ services:
       AIEO_DEMO_MODE: ${AIEO_DEMO_MODE:-true}
       AIEO_DATABASE_URL: ${AIEO_DATABASE_URL:-postgresql+psycopg://aieo:aieo@postgres:5432/aieo}
       AIEO_LLM_PROVIDER: ${AIEO_LLM_PROVIDER:-simulated}
+      AIEO_EMBEDDING_PROVIDER: ${AIEO_EMBEDDING_PROVIDER:-deterministic}
+      AIEO_EMBEDDING_MODEL: ${AIEO_EMBEDDING_MODEL:-text-embedding-3-small}
+      AIEO_EMBEDDING_DIMENSIONS: ${AIEO_EMBEDDING_DIMENSIONS:-16}
+      AIEO_EMBEDDING_BATCH_SIZE: ${AIEO_EMBEDDING_BATCH_SIZE:-32}
+      AIEO_EMBEDDING_TIMEOUT_SECONDS: ${AIEO_EMBEDDING_TIMEOUT_SECONDS:-30}
       AIEO_LLM_MODEL: ${AIEO_LLM_MODEL:-gpt-6-astra}
       AIEO_LLM_PLANNING_ENABLED: ${AIEO_LLM_PLANNING_ENABLED:-true}
       AIEO_LLM_TIMEOUT_SECONDS: ${AIEO_LLM_TIMEOUT_SECONDS:-60}
@@ -57,4 +64,3 @@ services:
 
 volumes:
   postgres-data:
-

@@ -12,6 +12,19 @@ class KnowledgeScope(StrEnum):
     VALIDATED_SOLUTION = "validated-solution"
 
 
+class KnowledgeProvenance(BaseModel):
+    path: str
+    revision: str
+    content_sha256: str
+    document_type: str
+    embedding_model: str = "deterministic-demo"
+    embedding_dimensions: int = 16
+    embedding_version: str = "1"
+    chunker_version: str = "lines-v1"
+    chunk_size: int
+    redactions: int = 0
+
+
 class KnowledgeDocumentCreate(BaseModel):
     project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
     title: str = Field(min_length=1, max_length=300)
@@ -29,6 +42,8 @@ class KnowledgeChunk(BaseModel):
     content: str
     position: int
     embedding: list[float]
+    start_line: int | None = None
+    end_line: int | None = None
 
 
 class KnowledgeDocument(BaseModel):
@@ -40,6 +55,9 @@ class KnowledgeDocument(BaseModel):
     sharing_authorized: bool
     chunks: int
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    collection: str | None = None
+    provenance: KnowledgeProvenance | None = None
+    embedding_key: str = "deterministic:deterministic-demo:1:16"
 
 
 class SearchHit(BaseModel):
@@ -49,6 +67,9 @@ class SearchHit(BaseModel):
     source: str
     content: str
     score: float
+    provenance: KnowledgeProvenance | None = None
+    start_line: int | None = None
+    end_line: int | None = None
 
 
 class KnowledgeSearchRequest(BaseModel):

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     llm_planning_enabled: bool = True
     max_llm_input_tokens: int = 4_000
     max_llm_output_tokens: int = 1_000
-    embedding_dimensions: int = 16
+    embedding_provider: str = "deterministic"
+    embedding_model: str = "text-embedding-3-small"
+    embedding_dimensions: int = Field(default=16, ge=1, le=3072)
+    embedding_batch_size: int = Field(default=32, ge=1, le=32)
+    embedding_timeout_seconds: float = Field(default=30.0, gt=0)
     knowledge_chunk_size: int = 800
     knowledge_chunk_overlap: int = 100
     mcp_project_config_dir: str = "configs/projects"
