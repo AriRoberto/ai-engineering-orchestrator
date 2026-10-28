@@ -26,6 +26,7 @@ from ai_engineering.knowledge.models import (
     KnowledgeDocument,
     KnowledgeProvenance,
     KnowledgeScope,
+    SearchHit,
 )
 from ai_engineering.knowledge.service import collection_counts, validate_collection
 
@@ -46,6 +47,9 @@ class DocumentRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     collection: Mapped[str | None] = mapped_column(String(63), nullable=True)
     provenance: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    embedding_key: Mapped[str] = mapped_column(
+        String(200), default="deterministic:deterministic-demo:1:16"
+    )
 
 
 class ChunkRow(Base):
@@ -58,7 +62,7 @@ class ChunkRow(Base):
     scope: Mapped[str] = mapped_column(String(32), index=True)
     content: Mapped[str] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer)
-    embedding: Mapped[list[float]] = mapped_column(Vector(16))
+    embedding: Mapped[list[float]] = mapped_column(Vector())
     start_line: Mapped[int | None] = mapped_column(Integer, nullable=True)
     end_line: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
@@ -97,6 +101,7 @@ class PostgresKnowledgeRepository:
             created_at=document.created_at,
             collection=document.collection,
             provenance=document.provenance.model_dump() if document.provenance else None,
+            embedding_key=document.embedding_key,
         )
         session.add(document_row)
         session.flush()
@@ -115,8 +120,14 @@ class PostgresKnowledgeRepository:
             for chunk in chunks
         )
 
-    def sync_collection(self, project_id, collection, entries):
-        validate_collection(project_id, collection, entries)
+    def sync_collection(
+        self,
+        project_id,
+        collection,
+        entries,
+        embedding_key="deterministic:deterministic-demo:1:16",
+    ):
+        validate_collection(project_id, collection, entries, embedding_key)
         incoming = {document.id for document, _chunks in entries}
         with Session(self.engine) as session, session.begin():
             session.execute(
@@ -126,7 +137,9 @@ class PostgresKnowledgeRepository:
             existing = set(
                 session.scalars(
                     select(DocumentRow.id).where(
-                        DocumentRow.project_id == project_id, DocumentRow.collection == collection
+                        DocumentRow.project_id == project_id,
+                        DocumentRow.collection == collection,
+                        DocumentRow.embedding_key == embedding_key,
                     )
                 )
             )
@@ -182,6 +195,72 @@ class PostgresKnowledgeRepository:
         with Session(self.engine) as session, session.begin():
             session.add(FeedbackRow(**feedback.model_dump()))
 
+    def search(self, project_id, query, embedding, embedding_key, limit, include_shared):
+        statement = text("""
+            WITH eligible AS MATERIALIZED (
+                SELECT chunks.* FROM knowledge_chunks chunks
+                JOIN knowledge_documents documents ON documents.id = chunks.document_id
+                WHERE documents.embedding_key = :embedding_key
+                  AND vector_dims(chunks.embedding) = :dimensions
+                  AND (documents.project_id = :project_id OR
+                       (:include_shared AND documents.scope = 'shared'
+                        AND documents.sharing_authorized))
+            ), vector_candidates AS (
+                SELECT id, embedding <=> CAST(:embedding AS vector) AS distance
+                FROM eligible
+                WHERE vector_norm(embedding) > 0
+                ORDER BY distance, id LIMIT :candidates
+            ), lexical_candidates AS (
+                SELECT chunks.id, GREATEST(
+                    ts_rank_cd(to_tsvector('portuguese', chunks.content),
+                               plainto_tsquery('portuguese', :query)),
+                    ts_rank_cd(to_tsvector('simple', chunks.content),
+                               plainto_tsquery('simple', :query))
+                ) AS relevance
+                FROM knowledge_chunks chunks
+                JOIN eligible ON eligible.id = chunks.id
+                WHERE to_tsvector('portuguese', chunks.content) @@
+                        plainto_tsquery('portuguese', :query)
+                   OR to_tsvector('simple', chunks.content) @@
+                        plainto_tsquery('simple', :query)
+                ORDER BY relevance DESC, chunks.id LIMIT :candidates
+            ), ranked AS (
+                SELECT id, 1.0 / (60 + row_number() OVER (ORDER BY distance, id)) AS score
+                FROM vector_candidates
+                UNION ALL
+                SELECT id, 1.0 / (60 + row_number() OVER (ORDER BY relevance DESC, id)) AS score
+                FROM lexical_candidates
+            ), fused AS (
+                SELECT id, SUM(score) AS score FROM ranked GROUP BY id
+                ORDER BY score DESC, id LIMIT :limit
+            )
+            SELECT documents.id AS document_id, chunks.id AS chunk_id,
+                   documents.title, documents.source, chunks.content, fused.score,
+                   documents.provenance, chunks.start_line, chunks.end_line
+            FROM fused JOIN knowledge_chunks chunks ON chunks.id = fused.id
+            JOIN knowledge_documents documents ON documents.id = chunks.document_id
+            ORDER BY fused.score DESC, chunks.id
+        """)
+        with Session(self.engine) as session:
+            rows = (
+                session.execute(
+                    statement,
+                    {
+                        "project_id": project_id,
+                        "query": query,
+                        "embedding": "[" + ",".join(str(value) for value in embedding) + "]",
+                        "embedding_key": embedding_key,
+                        "dimensions": len(embedding),
+                        "include_shared": include_shared,
+                        "limit": limit,
+                        "candidates": max(20, limit * 4),
+                    },
+                )
+                .mappings()
+                .all()
+            )
+        return [SearchHit(**row) for row in rows]
+
     @staticmethod
     def _document(row: DocumentRow) -> KnowledgeDocument:
         return KnowledgeDocument(
@@ -195,6 +274,7 @@ class PostgresKnowledgeRepository:
             created_at=row.created_at,
             collection=row.collection,
             provenance=KnowledgeProvenance(**row.provenance) if row.provenance else None,
+            embedding_key=row.embedding_key,
         )
 
     @staticmethod

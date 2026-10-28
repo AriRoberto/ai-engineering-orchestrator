@@ -5,8 +5,9 @@ Análise inicial do código local em 28/10/2026. O diagnóstico abaixo registra 
 A primeira etapa já tem implementação local: scanner de revisão Git, prévia, proveniência,
 fragmentos que preservam linhas e sincronização transacional por projeto/coleção.
 Consulte [RAG de repositórios](rag-repositorio.md) para migração e operação.
-A fragmentação inicial é por linhas; estrutura por AST/seções, embeddings semânticos,
-busca SQL e as etapas seguintes permanecem pendentes.
+A fragmentação inicial é por linhas. Embeddings semânticos opcionais e busca SQL
+também estão implementados; consulte [RAG semântica](rag-semantica.md). Estrutura por
+AST/seções, avaliação de relevância e as etapas seguintes permanecem pendentes.
 Escopo proposto: consultar o próprio orquestrador e apoiar os projetos cadastrados,
 mantendo bases isoladas. Os repositórios externos não foram inspecionados.
 
@@ -185,6 +186,8 @@ texto adversarial e orçamento de contexto. Definir metas após medir a linha de
 
 A ingestão local descrita no guia foi implementada sem alterar a ingestão manual existente.
 A migração 005 adiciona proveniência, coleção e linhas dos fragmentos. A aplicação
-continua usando embeddings determinísticos de demonstração; ainda não é uma RAG
-semântica de produção. Os próximos incrementos são o provedor semântico e a busca SQL.
+usa embeddings determinísticos por padrão, com provedor OpenAI opcional e recuperação
+híbrida SQL. A migração 006 permite versões com dimensões diferentes sem misturar
+vetores. Ainda faltam avaliação semântica no corpus real, orçamento de contexto,
+citações verificadas e sincronização GitHub antes de afirmar qualidade de produção.
 

@@ -47,6 +47,7 @@ from ai_engineering.integrations.mcp.repository import (
 )
 from ai_engineering.integrations.mcp.service import MCPGateway
 from ai_engineering.knowledge.database import PostgresKnowledgeRepository
+from ai_engineering.knowledge.embeddings import build_embedding_provider
 from ai_engineering.knowledge.models import (
     FeedbackCreate,
     KnowledgeDocument,
@@ -55,7 +56,6 @@ from ai_engineering.knowledge.models import (
     SearchHit,
 )
 from ai_engineering.knowledge.service import (
-    DeterministicEmbeddingProvider,
     InMemoryKnowledgeRepository,
     KnowledgeService,
 )
@@ -99,7 +99,7 @@ knowledge_repository = (
 )
 knowledge_service = KnowledgeService(
     knowledge_repository,
-    DeterministicEmbeddingProvider(settings.embedding_dimensions),
+    build_embedding_provider(settings),
     KnowledgeContentGuard(),
     settings.knowledge_chunk_size,
     settings.knowledge_chunk_overlap,

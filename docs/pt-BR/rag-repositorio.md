@@ -2,8 +2,8 @@
 
 Esta primeira etapa publica arquivos de uma revisão Git na base de conhecimento
 existente. A busca e a consolidação do orquestrador passam a encontrar esses trechos.
-Os embeddings continuam sendo os de demonstração, com 16 dimensões. Embeddings
-semânticos e busca SQL são etapas posteriores.
+Por padrão, os embeddings são de demonstração, com 16 dimensões. Para usar o provedor
+semântico e entender a busca SQL, consulte [RAG semântica](rag-semantica.md).
 
 ## Comportamento
 
@@ -127,5 +127,5 @@ O teste `tests/integration/test_repository_knowledge.py` exige
 aplica migrações, verifica rollback e isolamento e remove seus documentos ao final.
 Sem essa variável, o teste é ignorado.
 
-Próximas etapas: provedor semântico e migração dos vetores; recuperação híbrida em
-SQL; seleção de contexto por orçamento; citações verificadas; sincronização GitHub.
+O provedor semântico e a recuperação SQL estão no guia complementar. Próximas etapas:
+seleção de contexto por orçamento, citações verificadas e sincronização GitHub.
