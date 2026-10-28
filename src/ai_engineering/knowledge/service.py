@@ -54,6 +54,12 @@ class KnowledgeRepository(Protocol):
         self, project_id: str, include_shared: bool
     ) -> list[tuple[KnowledgeDocument, KnowledgeChunk]]: ...
     def add_feedback(self, feedback: FeedbackCreate) -> None: ...
+    def sync_collection(
+        self,
+        project_id: str,
+        collection: str,
+        entries: list[tuple[KnowledgeDocument, list[KnowledgeChunk]]],
+    ) -> dict[str, int]: ...
 
 
 class InMemoryKnowledgeRepository:
@@ -94,6 +100,61 @@ class InMemoryKnowledgeRepository:
 
     def add_feedback(self, feedback: FeedbackCreate) -> None:
         self.feedback.append(feedback.model_copy(deep=True))
+
+    def sync_collection(self, project_id, collection, entries):
+        validate_collection(project_id, collection, entries)
+        existing = {
+            key
+            for key, document in self.documents.items()
+            if document.project_id == project_id and document.collection == collection
+        }
+        incoming = {document.id for document, _chunks in entries}
+        documents = self.documents.copy()
+        chunks = self.chunks.copy()
+        for identifier in existing - incoming:
+            documents.pop(identifier)
+            chunks.pop(identifier, None)
+        for document, parts in entries:
+            if document.id not in existing:
+                documents[document.id] = document.model_copy(deep=True)
+                chunks[document.id] = [part.model_copy(deep=True) for part in parts]
+            else:
+                refreshed = document.model_copy(deep=True)
+                refreshed.created_at = documents[document.id].created_at
+                documents[document.id] = refreshed
+        self.documents, self.chunks = documents, chunks
+        return collection_counts(existing, incoming)
+
+
+def validate_collection(project_id, collection, entries):
+    identifiers = set()
+    for document, chunks in entries:
+        if (
+            document.project_id != project_id
+            or document.collection != collection
+            or document.scope != KnowledgeScope.PROJECT
+            or document.sharing_authorized
+            or document.provenance is None
+            or document.id in identifiers
+            or document.chunks != len(chunks)
+        ):
+            raise ValueError("Coleção de conhecimento inconsistente")
+        identifiers.add(document.id)
+        for chunk in chunks:
+            if (
+                chunk.document_id != document.id
+                or chunk.project_id != project_id
+                or chunk.scope != KnowledgeScope.PROJECT
+            ):
+                raise ValueError("Fragmento fora do escopo da coleção")
+
+
+def collection_counts(existing, incoming):
+    return {
+        "added": len(incoming - existing),
+        "removed": len(existing - incoming),
+        "unchanged": len(existing & incoming),
+    }
 
 
 class KnowledgeService:
@@ -158,6 +219,9 @@ class KnowledgeService:
                     source=document.source,
                     content=chunk.content,
                     score=round((0.7 * semantic) + (0.3 * keyword_score), 6),
+                    provenance=document.provenance,
+                    start_line=chunk.start_line,
+                    end_line=chunk.end_line,
                 )
             )
         return sorted(hits, key=lambda hit: hit.score, reverse=True)[:limit]

@@ -11,6 +11,7 @@ services:
       - ./migrations/002_phase2_executions.sql:/docker-entrypoint-initdb.d/002_phase2_executions.sql:ro
       - ./migrations/003_phase2_mcp_audit.sql:/docker-entrypoint-initdb.d/003_phase2_mcp_audit.sql:ro
       - ./migrations/004_phase4_evidence_audit.sql:/docker-entrypoint-initdb.d/004_phase4_evidence_audit.sql:ro
+      - ./migrations/005_repository_knowledge.sql:/docker-entrypoint-initdb.d/005_repository_knowledge.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aieo -d aieo"]
       interval: 5s
@@ -57,4 +58,3 @@ services:
 
 volumes:
   postgres-data:
-
