@@ -30,6 +30,16 @@ def test_openai_provider_requires_explicit_credential(tmp_path) -> None:
         OpenAIAgentsProvider("modelo", api_key_file=str(tmp_path / "missing"))
 
 
+def test_openai_provider_reads_restricted_key_file(tmp_path) -> None:
+    key_file = tmp_path / "openai-key"
+    key_file.write_text("test-key\n", encoding="utf-8")
+    key_file.chmod(0o600)
+
+    provider = OpenAIAgentsProvider("modelo", api_key_file=str(key_file))
+
+    assert provider.model == "modelo"
+
+
 def test_openai_provider_uses_actual_sdk_usage_and_private_defaults(monkeypatch) -> None:
     from agents import Runner
 

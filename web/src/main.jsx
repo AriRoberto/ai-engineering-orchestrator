@@ -73,12 +73,22 @@ function App() {
     return response.status === 204 ? null : response.json();
   }
 
-  async function refresh() {
-    if (!projectId) return;
+  function clearWorkspace({ clearPrompt = true } = {}) {
+    setExecutions([]);
+    setInvocations([]);
+    setAudits([]);
+    setSelected(null);
+    setReportAction("");
+    setError("");
+    if (clearPrompt) setPrompt("");
+  }
+
+  async function refresh(targetProjectId = projectId) {
+    if (!targetProjectId) return;
     setLoading(true);
     setError("");
     try {
-      const query = encodeURIComponent(projectId);
+      const query = encodeURIComponent(targetProjectId);
       const [executionData, invocationData, auditData] = await Promise.all([
         request(`/v1/executions?project_id=${query}`),
         request(`/v1/mcp/invocations?project_id=${query}`),
@@ -94,6 +104,14 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function changeProject(nextProjectId) {
+    if (nextProjectId === projectId) return;
+    clearWorkspace();
+    setProjectId(nextProjectId);
+    setSection("executions");
+    await refresh(nextProjectId);
   }
 
   async function loadCatalog() {
@@ -124,6 +142,8 @@ function App() {
   async function createAnalysis(event) {
     event.preventDefault();
     if (!projectId || prompt.trim().length < 3) return;
+    clearWorkspace({ clearPrompt: false });
+    setSection("executions");
     setLoading(true);
     setError("");
     try {
@@ -162,7 +182,9 @@ function App() {
       });
       setProjects((current) => [...current.filter((item) => item.id !== project.id), project]
         .sort((left, right) => left.id.localeCompare(right.id)));
+      clearWorkspace();
       setProjectId(project.id);
+      setSection("executions");
       setRepositoryInput("");
       setProjectIdInput("");
       setShowProjectForm(false);
@@ -251,13 +273,14 @@ function App() {
             </div>
           </div>
           <div className="connection">
-            <select aria-label="Projeto" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <select aria-label="Projeto" value={projectId} onChange={(event) => changeProject(event.target.value)}>
               {!projects.length && <option value={projectId}>{projectId}</option>}
               {projects.map((project) => <option value={project.id} key={project.id}>{project.id}</option>)}
             </select>
             <input aria-label="API key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="X-API-Key" />
             {runtime?.project_registration_enabled && <button className="secondary" onClick={() => setShowProjectForm((current) => !current)}>+ Projeto</button>}
-            <button onClick={refresh} disabled={loading}>{loading ? "Atualizando…" : "Atualizar"}</button>
+            <button className="secondary" onClick={() => clearWorkspace()} disabled={loading}>Limpar tela</button>
+            <button onClick={() => refresh()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar"}</button>
           </div>
         </header>
         {error && <div className="error">{error}</div>}

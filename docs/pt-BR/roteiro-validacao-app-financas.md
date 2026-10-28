@@ -325,6 +325,11 @@ Para demonstrar outro projeto público sem editar YAML, clique em **+ Projeto**,
 backend valida os metadados no GitHub, persiste o projeto em `.aieo-demo/projects` e fixa o acesso
 como somente leitura. Depois do cadastro, o novo projeto já fica selecionado para análise.
 
+Ao trocar ou cadastrar um projeto, a interface limpa imediatamente os resultados, fontes e
+auditorias do projeto anterior antes de carregar o novo contexto. **Limpar tela** remove apenas a
+visualização e o texto em edição; não apaga o histórico auditável do PostgreSQL. Use **Atualizar**
+para carregar novamente o histórico do projeto selecionado.
+
 O resultado é uma análise controlada dos arquivos coletados. Como o provedor é simulado, esta etapa
 valida a orquestração e a rastreabilidade, não a qualidade de um modelo externo pago.
 
@@ -339,6 +344,9 @@ read -rsp 'Chave OpenAI: ' AIEO_KEY_INPUT; printf '\n'
 printf '%s' "$AIEO_KEY_INPUT" > "$HOME/.config/aieo/openai-api-key"
 unset AIEO_KEY_INPUT
 chmod 600 "$HOME/.config/aieo/openai-api-key"
+
+# Deve imprimir um número maior que zero; não mostra a chave.
+wc -c < "$HOME/.config/aieo/openai-api-key"
 
 make demo-openai \
   OPENAI_KEY_FILE="$HOME/.config/aieo/openai-api-key" \
