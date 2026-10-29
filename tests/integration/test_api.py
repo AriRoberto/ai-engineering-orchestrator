@@ -31,6 +31,7 @@ def test_runtime_identifies_active_llm_without_exposing_credentials() -> None:
         "embedding_provider": "deterministic",
         "embedding_model": "deterministic-demo",
         "embedding_external_api": False,
+        "max_rag_context_tokens": 1200,
         "project_registration_enabled": False,
     }
     assert "key" not in response.text.casefold()

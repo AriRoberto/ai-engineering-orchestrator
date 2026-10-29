@@ -155,9 +155,45 @@ def test_rag_context_is_referenced_and_llm_consolidates_results() -> None:
 
     assert execution.status == ExecutionStatus.COMPLETED
     assert execution.knowledge_sources == ["demo://runbook"]
+    assert execution.knowledge_context[0].citation == "[knowledge:1]"
+    assert execution.knowledge_context[0].content.startswith("O pipeline fictício")
+    assert execution.knowledge_input_tokens > 0
+    assert execution.knowledge_input_tokens <= 1200
     assert execution.consolidated_result is not None
     assert execution.llm_usage is not None
     assert execution.llm_usage.estimated is True
+
+
+def test_rag_context_respects_its_own_token_budget() -> None:
+    knowledge = KnowledgeService(
+        InMemoryKnowledgeRepository(),
+        DeterministicEmbeddingProvider(),
+        KnowledgeContentGuard(),
+    )
+    knowledge.ingest(
+        KnowledgeDocumentCreate(
+            project_id="demo-project",
+            title="Documento extenso",
+            content="banco de dados " * 500,
+            source="demo://long-document",
+        )
+    )
+    orchestrator = AIEngineeringOrchestrator(
+        default_agents(),
+        InMemoryExecutionRepository(),
+        knowledge=knowledge,
+        llm=SimulatedLLMProvider(),
+        max_rag_context_tokens=80,
+    )
+
+    execution = orchestrator.execute(
+        TaskRequest(project_id="demo-project", prompt="Revise o banco de dados")
+    )
+
+    assert execution.status == ExecutionStatus.COMPLETED
+    assert execution.knowledge_input_tokens <= 80
+    assert len(execution.knowledge_context) == 1
+    assert len(execution.knowledge_context[0].content) < 800
 
 
 def test_llm_input_budget_fails_closed() -> None:
