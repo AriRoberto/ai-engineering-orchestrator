@@ -81,3 +81,29 @@ class Execution(BaseModel):
         self.status = status
         self.updated_at = datetime.now(UTC)
         self.events.append(ExecutionEvent(status=status, detail=detail))
+
+
+class ExecutionSummary(BaseModel):
+    """Lightweight projection used by history screens and API clients."""
+
+    id: UUID
+    project_id: str
+    prompt: str
+    status: ExecutionStatus
+    selected_agents: list[AgentKind] = Field(default_factory=list)
+    evidence_source_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_execution(cls, execution: Execution) -> ExecutionSummary:
+        return cls(
+            id=execution.id,
+            project_id=execution.request.project_id,
+            prompt=execution.request.prompt,
+            status=execution.status,
+            selected_agents=execution.selected_agents,
+            evidence_source_count=len(execution.evidence_sources),
+            created_at=execution.created_at,
+            updated_at=execution.updated_at,
+        )

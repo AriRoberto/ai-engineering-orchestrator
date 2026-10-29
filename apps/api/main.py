@@ -13,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from ai_engineering.agents.specialists import default_agents
 from ai_engineering.application.postgres_repository import PostgresExecutionRepository
 from ai_engineering.application.repository import InMemoryExecutionRepository
-from ai_engineering.domain.models import Execution, TaskRequest
+from ai_engineering.domain.models import Execution, ExecutionSummary, TaskRequest
 from ai_engineering.evidence.audit import (
     EvidenceAccessAudit,
     EvidenceAuditRepository,
@@ -219,12 +219,19 @@ def health() -> dict[str, str]:
 @app.get("/runtime", tags=["system"])
 def runtime() -> dict[str, str | bool]:
     is_openai = settings.llm_provider == "openai-agents"
+    uses_external_embeddings = settings.embedding_provider == "openai"
     return {
         "llm_mode": "openai" if is_openai else "simulated",
         "llm_provider": settings.llm_provider,
         "llm_model": settings.llm_model if is_openai else "deterministic-demo",
         "external_api": is_openai,
         "usage_accounting": "measured" if is_openai else "estimated",
+        "embedding_mode": "openai" if uses_external_embeddings else "local",
+        "embedding_provider": settings.embedding_provider,
+        "embedding_model": (
+            settings.embedding_model if uses_external_embeddings else "deterministic-demo"
+        ),
+        "embedding_external_api": uses_external_embeddings,
         "project_registration_enabled": settings.project_registration_enabled,
     }
 
@@ -306,6 +313,16 @@ def create_execution(request: TaskRequest) -> Execution:
 def list_executions(project_id: str) -> list[Execution]:
     authorize_project(project_id)
     return repository.list(project_id)
+
+
+@app.get(
+    "/v1/executions/summaries",
+    response_model=list[ExecutionSummary],
+    tags=["executions"],
+)
+def list_execution_summaries(project_id: str) -> list[ExecutionSummary]:
+    authorize_project(project_id)
+    return [ExecutionSummary.from_execution(item) for item in repository.list(project_id)]
 
 
 @app.get("/v1/executions/{execution_id}", response_model=Execution, tags=["executions"])
