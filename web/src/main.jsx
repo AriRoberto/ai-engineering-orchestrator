@@ -23,6 +23,7 @@ function reportMarkdown(execution, projectId) {
     `Revisão: ${execution.request?.context?.evidence?.revision || "não informada"}`,
     `LLM: ${execution.llm_usage?.provider || "não informado"} / ${execution.llm_usage?.model || "não informado"}`,
     `Tokens: ${(execution.llm_usage?.input_tokens || 0) + (execution.llm_usage?.output_tokens || 0)} (${execution.llm_usage?.estimated ? "estimados" : "medidos pelo provedor"})`,
+    `Contexto RAG: ${execution.knowledge_input_tokens || 0} tokens estimados em ${execution.knowledge_context?.length || 0} trechos`,
     "",
     "## Resultado consolidado",
     execution.consolidated_result || "Sem resultado consolidado.",
@@ -35,6 +36,7 @@ function reportMarkdown(execution, projectId) {
     ])),
     "## Fontes",
     ...((execution.evidence_sources || []).map((source) => `- ${source}`)),
+    ...((execution.knowledge_context || []).map((item) => `- ${item.citation} ${item.source}`)),
   ].join("\n");
 }
 
@@ -352,6 +354,7 @@ function App() {
               <strong>{runtime
                 ? `${runtime.embedding_mode === "openai" ? "OPENAI" : "LOCAL"} · ${runtime.embedding_model}`
                 : "VERIFICANDO…"}</strong>
+              {runtime && <small>limite {runtime.max_rag_context_tokens} tokens/análise</small>}
             </div>
           </div>
           <div className="connection">
@@ -413,6 +416,7 @@ function App() {
           ))}{!executions.length && <Empty />}</div>
           <div className="panel detail"><h2>Detalhes</h2>{selected ? <>
             <dl><dt>ID</dt><dd>{selected.id}</dd><dt>Estado</dt><dd>{selected.status}</dd><dt>Agentes</dt><dd>{selected.selected_agents?.join(", ") || "nenhum"}</dd><dt>Fontes</dt><dd>{selected.evidence_sources?.length || 0}</dd></dl>
+            {!!selected.knowledge_context?.length && <><h3>Contexto RAG utilizado · {selected.knowledge_input_tokens} tokens estimados</h3><div className="knowledge-hits">{selected.knowledge_context.map((item) => <article key={item.citation}><div><strong>{item.citation} · {item.title}</strong><span>score {item.score.toFixed(4)}</span></div><small>{item.source}{item.start_line ? ` · linhas ${item.start_line}-${item.end_line}` : ""}</small><pre>{item.content}</pre></article>)}</div></>}
             <h3>Resultado consolidado</h3><pre>{selected.consolidated_result || "Sem resultado."}</pre>
           </> : <Empty />}</div>
         </section>}
@@ -504,11 +508,13 @@ function TechnicalReport({ execution, projectId, audit, onCopy, onDownload, acti
       <div><span>Acesso</span><strong>{evidence.read_only === false ? "escrita" : "somente leitura"}</strong></div>
       <div><span>Consolidação LLM</span><strong>{llmUsage?.provider || "não informada"}</strong></div>
       <div><span>Tokens</span><strong>{totalTokens} {llmUsage?.estimated ? "estimados" : "medidos"}</strong></div>
+      <div><span>Contexto RAG</span><strong>{execution.knowledge_input_tokens || 0} tokens</strong></div>
     </div>
     {llmUsage?.provider === "simulated" && <p className="report-notice">Consolidação gerada pelo provedor simulado. Valida orquestração e rastreabilidade; não representa parecer de um LLM externo.</p>}
     {llmUsage?.provider === "openai-agents" && <p className="report-feedback">Consolidação real via OpenAI Agents SDK: modelo {llmUsage.model}, {totalTokens} tokens medidos pelo provedor.</p>}
     <section className="report-section"><h3>Escopo solicitado</h3><p>{execution.request?.prompt}</p></section>
     <section className="report-section"><h3>Resultado consolidado</h3><pre>{execution.consolidated_result || "Sem resultado consolidado."}</pre></section>
+    <section className="report-section"><h3>Contexto RAG recuperado</h3><div className="knowledge-hits">{(execution.knowledge_context || []).map((item) => <article key={item.citation}><div><strong>{item.citation} · {item.title}</strong><span>{item.estimated_tokens} tokens · score {item.score.toFixed(4)}</span></div><small>{item.source}{item.start_line ? ` · linhas ${item.start_line}-${item.end_line}` : ""}</small><pre>{item.content}</pre></article>)}{!execution.knowledge_context?.length && <Empty text="Nenhum trecho da Base RAG foi utilizado." />}</div></section>
     <section className="report-section"><h3>Análise por especialidade</h3><div className="specialist-grid">{(execution.results || []).map((result) => <article className="specialist" key={result.agent}>
       <div className="specialist-heading"><h4>{result.agent}</h4><span>{result.findings?.length || 0} achados</span></div>
       <p>{result.summary}</p>
