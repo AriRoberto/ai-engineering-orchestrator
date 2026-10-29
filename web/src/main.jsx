@@ -90,14 +90,17 @@ function App() {
     try {
       const query = encodeURIComponent(targetProjectId);
       const [executionData, invocationData, auditData] = await Promise.all([
-        request(`/v1/executions?project_id=${query}`),
+        request(`/v1/executions/summaries?project_id=${query}`),
         request(`/v1/mcp/invocations?project_id=${query}`),
         request(`/v1/evidence/audits?project_id=${query}`),
       ]);
       setExecutions(executionData);
       setInvocations(invocationData);
       setAudits(auditData);
-      setSelected(executionData[0] || null);
+      const firstExecution = executionData[0];
+      setSelected(firstExecution
+        ? await request(`/v1/executions/${firstExecution.id}?project_id=${query}`)
+        : null);
       sessionStorage.setItem("aieo-api-key", apiKey);
     } catch (reason) {
       setError(reason.message);
@@ -222,7 +225,12 @@ function App() {
   }, [projectId, section]);
 
   const sources = executions.flatMap((execution) =>
-    (execution.evidence_sources || []).map((source) => ({ execution: execution.id, source })),
+    execution.id === selected?.id
+      ? (selected.evidence_sources || []).map((source) => ({ execution: execution.id, source }))
+      : [],
+  );
+  const sourceCount = executions.reduce(
+    (total, execution) => total + (execution.evidence_source_count || 0), 0,
   );
   const pending = invocations.filter((item) => item.status === "WAITING_APPROVAL");
 
@@ -271,6 +279,17 @@ function App() {
                 : "VERIFICANDO…"}</strong>
               {runtime && <small>{runtime.usage_accounting === "measured" ? "tokens medidos" : "tokens estimados"}</small>}
             </div>
+            <div
+              className={`llm-runtime llm-runtime-${runtime?.embedding_mode === "openai" ? "openai" : "simulated"}`}
+              title={runtime?.embedding_external_api
+                ? "Ingestão e buscas RAG geram chamadas externas de embeddings."
+                : "Embeddings determinísticos processados localmente, sem cobrança externa."}
+            >
+              <span>RAG embeddings</span>
+              <strong>{runtime
+                ? `${runtime.embedding_mode === "openai" ? "OPENAI" : "LOCAL"} · ${runtime.embedding_model}`
+                : "VERIFICANDO…"}</strong>
+            </div>
           </div>
           <div className="connection">
             <select aria-label="Projeto" value={projectId} onChange={(event) => changeProject(event.target.value)}>
@@ -292,7 +311,7 @@ function App() {
         </form>}
         <section className="metrics">
           <article><span>Execuções</span><strong>{executions.length}</strong></article>
-          <article><span>Fontes citadas</span><strong>{sources.length}</strong></article>
+          <article><span>Fontes citadas</span><strong>{sourceCount}</strong></article>
           <article><span>Aprovações pendentes</span><strong>{pending.length}</strong></article>
           <article><span>Acessos auditados</span><strong>{audits.length}</strong></article>
         </section>
@@ -317,8 +336,15 @@ function App() {
 
         {section === "executions" && <section className="grid">
           <div className="panel"><h2>Histórico de execuções</h2>{executions.map((item) => (
-            <button className="row" onClick={() => setSelected(item)} key={item.id}>
-              <span><b>{item.request?.prompt || "Execução"}</b><small>{item.id}</small></span>
+            <button className="row" onClick={async () => {
+              try {
+                setError("");
+                setSelected(await request(`/v1/executions/${item.id}?project_id=${encodeURIComponent(projectId)}`));
+              } catch (reason) {
+                setError(reason.message);
+              }
+            }} key={item.id}>
+              <span><b>{item.prompt || "Execução"}</b><small>{item.id}</small></span>
               <i className={statusClass(item.status)}>{item.status}</i>
             </button>
           ))}{!executions.length && <Empty />}</div>
