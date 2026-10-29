@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -77,6 +78,39 @@ class KnowledgeSearchRequest(BaseModel):
     query: str = Field(min_length=2, max_length=2_000)
     limit: int = Field(default=5, ge=1, le=20)
     include_shared: bool = False
+
+
+class RepositoryIngestionRequest(BaseModel):
+    project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    branch: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$",
+    )
+    collection: str = Field(
+        default="repository", pattern=r"^[a-z0-9][a-z0-9-]{1,62}$"
+    )
+
+
+class IngestionStatus(StrEnum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class RepositoryIngestionJob(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    project_id: str
+    repository: str
+    branch: str
+    collection: str
+    status: IngestionStatus = IngestionStatus.PENDING
+    report: dict[str, Any] | None = None
+    error: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FeedbackCreate(BaseModel):

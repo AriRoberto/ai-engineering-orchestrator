@@ -136,6 +136,38 @@ def test_knowledge_and_simulated_llm_endpoints() -> None:
     assert llm.json()["usage"]["estimated"] is True
 
 
+def test_repository_ingestion_job_is_project_scoped(monkeypatch) -> None:
+    monkeypatch.setattr(api_main.repository_ingestion_jobs, "run", lambda _job_id: None)
+    started = client.post(
+        "/v1/knowledge/repositories/ingestions",
+        json={"project_id": "app-financas", "branch": "main"},
+    )
+
+    assert started.status_code == 202
+    payload = started.json()
+    assert payload["status"] == "PENDING"
+    assert payload["repository"] == "https://github.com/AriRoberto/app-financas"
+    loaded = client.get(
+        f"/v1/knowledge/repositories/ingestions/{payload['id']}",
+        params={"project_id": "app-financas"},
+    )
+    assert loaded.status_code == 200
+    denied = client.get(
+        f"/v1/knowledge/repositories/ingestions/{payload['id']}",
+        params={"project_id": "demo-project"},
+    )
+    assert denied.status_code == 404
+
+
+def test_repository_ingestion_rejects_private_catalog_project() -> None:
+    response = client.post(
+        "/v1/knowledge/repositories/ingestions",
+        json={"project_id": "app-ams", "branch": "main"},
+    )
+
+    assert response.status_code == 403
+
+
 def test_governed_mcp_endpoints() -> None:
     tools = client.get("/v1/mcp/tools", params={"project_id": "laboratorio-fase2"})
     assert tools.status_code == 200
