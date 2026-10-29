@@ -89,17 +89,21 @@ O resultado inclui `added`, `removed` e `unchanged`. Uma alteração de conteúd
 como remoção da versão anterior e adição da nova. Revise a prévia antes de aplicar
 mudanças de limites, pois arquivos que deixam de ser elegíveis saem da coleção.
 
-A imagem normal da API não inclui Git. Para indexar dentro da rede da demo sem
-instalar Python/Git no host, use um container administrativo descartável:
+A UI em `/ui/`, na seção **Base RAG**, permite indexar a branch de um repositório
+público já cadastrado. A API cria um job assíncrono, clona sem checkout em diretório
+temporário, publica a coleção e remove a cópia ao concluir. O relatório apresenta
+revisão, documentos, chunks, alterações e contagens dos arquivos descartados.
+
+Para operar exclusivamente por CLI dentro da rede da demo, use um container
+administrativo descartável:
 
 ```bash
 docker compose -p aieo-demo -f compose.yaml -f compose.demo.yaml run --rm --no-deps \
-  --user root -v "$PWD:/repository:ro" api sh -c \
-  'apt-get update -qq && apt-get install -y -qq git && git config --global --add safe.directory /repository && python -m ai_engineering.knowledge.repository_ingestion --root /repository --project-id ai-engineering-orchestrator'
+  -v "$PWD:/repository:ro" api sh -c \
+  'git config --global --add safe.directory /repository && python -m ai_engineering.knowledge.repository_ingestion --root /repository --project-id ai-engineering-orchestrator'
 ```
 
-Esse comando instala Git somente no container descartável e lê o checkout em modo
-somente leitura. Após revisar a prévia, repita adicionando `--apply` ao final do
+Esse comando lê o checkout em modo somente leitura. Após revisar a prévia, repita adicionando `--apply` ao final do
 comando Python, dentro das aspas. Não execute com `--allow-empty` a menos que queira
 autorizar explicitamente uma coleção vazia.
 

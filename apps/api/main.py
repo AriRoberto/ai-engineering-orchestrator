@@ -1,8 +1,9 @@
+import re
 from pathlib import Path
 from uuid import UUID
 
 import structlog
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Response, status
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -48,11 +49,14 @@ from ai_engineering.integrations.mcp.repository import (
 from ai_engineering.integrations.mcp.service import MCPGateway
 from ai_engineering.knowledge.database import PostgresKnowledgeRepository
 from ai_engineering.knowledge.embeddings import build_embedding_provider
+from ai_engineering.knowledge.ingestion_jobs import RepositoryIngestionJobs
 from ai_engineering.knowledge.models import (
     FeedbackCreate,
     KnowledgeDocument,
     KnowledgeDocumentCreate,
     KnowledgeSearchRequest,
+    RepositoryIngestionJob,
+    RepositoryIngestionRequest,
     SearchHit,
 )
 from ai_engineering.knowledge.service import (
@@ -103,6 +107,11 @@ knowledge_service = KnowledgeService(
     KnowledgeContentGuard(),
     settings.knowledge_chunk_size,
     settings.knowledge_chunk_overlap,
+)
+repository_ingestion_jobs = RepositoryIngestionJobs(
+    knowledge_repository,
+    knowledge_service.embeddings,
+    settings.repository_ingestion_timeout_seconds,
 )
 llm_provider = build_llm_provider(
     settings.llm_provider,
@@ -365,6 +374,57 @@ def search_knowledge(request: KnowledgeSearchRequest) -> list[SearchHit]:
     return knowledge_service.search(
         request.project_id, request.query, request.limit, request.include_shared
     )
+
+
+@app.post(
+    "/v1/knowledge/repositories/ingestions",
+    response_model=RepositoryIngestionJob,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["knowledge"],
+)
+def start_repository_ingestion(
+    request: RepositoryIngestionRequest, background_tasks: BackgroundTasks
+) -> RepositoryIngestionJob:
+    authorize_project(request.project_id)
+    project = project_catalog.get(request.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado no catálogo")
+    if project.visibility != "public" or project.mode != "read-only":
+        raise HTTPException(
+            status_code=403,
+            detail="Ingestão pela interface exige repositório público em modo somente leitura",
+        )
+    if not re.fullmatch(
+        r"https://github\.com/[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}",
+        project.repository,
+    ):
+        raise HTTPException(status_code=422, detail="URL de repositório não autorizada")
+    job = repository_ingestion_jobs.create(request, project)
+    background_tasks.add_task(repository_ingestion_jobs.run, job.id)
+    return job
+
+
+@app.get(
+    "/v1/knowledge/repositories/ingestions",
+    response_model=list[RepositoryIngestionJob],
+    tags=["knowledge"],
+)
+def list_repository_ingestions(project_id: str) -> list[RepositoryIngestionJob]:
+    authorize_project(project_id)
+    return repository_ingestion_jobs.list(project_id)
+
+
+@app.get(
+    "/v1/knowledge/repositories/ingestions/{job_id}",
+    response_model=RepositoryIngestionJob,
+    tags=["knowledge"],
+)
+def get_repository_ingestion(job_id: UUID, project_id: str) -> RepositoryIngestionJob:
+    authorize_project(project_id)
+    job = repository_ingestion_jobs.get(job_id, project_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Ingestão não encontrada")
+    return job
 
 
 @app.delete("/v1/knowledge/documents/{document_id}", status_code=204, tags=["knowledge"])

@@ -214,6 +214,9 @@ Endpoints atuais:
 - `GET /v1/executions/{id}?project_id=...`
 - `POST /v1/executions/{id}/cancel?project_id=...`
 - `POST /v1/knowledge/documents`
+- `POST /v1/knowledge/repositories/ingestions` (job de ingestão Git governada)
+- `GET /v1/knowledge/repositories/ingestions?project_id=...`
+- `GET /v1/knowledge/repositories/ingestions/{id}?project_id=...`
 - `POST /v1/knowledge/search`
 - `DELETE /v1/knowledge/documents/{id}`
 - `POST /v1/feedback`

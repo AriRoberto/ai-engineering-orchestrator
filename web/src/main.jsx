@@ -4,6 +4,7 @@ import "./styles.css";
 
 const sections = [
   ["executions", "Execuções"],
+  ["knowledge", "Base RAG"],
   ["report", "Relatório técnico"],
   ["sources", "Fontes"],
   ["approvals", "Aprovações"],
@@ -61,6 +62,10 @@ function App() {
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [repositoryInput, setRepositoryInput] = useState("");
   const [projectIdInput, setProjectIdInput] = useState("");
+  const [ingestion, setIngestion] = useState(null);
+  const [ingestionBranch, setIngestionBranch] = useState("");
+  const [knowledgeQuery, setKnowledgeQuery] = useState("");
+  const [knowledgeHits, setKnowledgeHits] = useState([]);
 
   async function request(path, options = {}) {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -79,6 +84,8 @@ function App() {
     setAudits([]);
     setSelected(null);
     setReportAction("");
+    setIngestion(null);
+    setKnowledgeHits([]);
     setError("");
     if (clearPrompt) setPrompt("");
   }
@@ -164,6 +171,62 @@ function App() {
       await refresh();
       setSelected(execution);
       setSection("executions");
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function pollIngestion(jobId, targetProjectId) {
+    const query = encodeURIComponent(targetProjectId);
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const job = await request(`/v1/knowledge/repositories/ingestions/${jobId}?project_id=${query}`);
+      setIngestion(job);
+      if (["COMPLETED", "FAILED"].includes(job.status)) return job;
+      await new Promise((resolve) => window.setTimeout(resolve, 1000));
+    }
+    throw new Error("A ingestão continua em processamento; use Atualizar para consultar depois.");
+  }
+
+  async function startIngestion(event) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    setKnowledgeHits([]);
+    try {
+      const job = await request("/v1/knowledge/repositories/ingestions", {
+        method: "POST",
+        body: JSON.stringify({
+          project_id: projectId,
+          branch: ingestionBranch.trim() || null,
+          collection: "repository",
+        }),
+      });
+      setIngestion(job);
+      await pollIngestion(job.id, projectId);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function searchKnowledge(event) {
+    event.preventDefault();
+    if (knowledgeQuery.trim().length < 2) return;
+    setLoading(true);
+    setError("");
+    try {
+      setKnowledgeHits(await request("/v1/knowledge/search", {
+        method: "POST",
+        body: JSON.stringify({
+          project_id: projectId,
+          query: knowledgeQuery.trim(),
+          limit: 5,
+          include_shared: false,
+        }),
+      }));
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -352,6 +415,41 @@ function App() {
             <dl><dt>ID</dt><dd>{selected.id}</dd><dt>Estado</dt><dd>{selected.status}</dd><dt>Agentes</dt><dd>{selected.selected_agents?.join(", ") || "nenhum"}</dd><dt>Fontes</dt><dd>{selected.evidence_sources?.length || 0}</dd></dl>
             <h3>Resultado consolidado</h3><pre>{selected.consolidated_result || "Sem resultado."}</pre>
           </> : <Empty />}</div>
+        </section>}
+
+        {section === "knowledge" && <section className="rag-workspace">
+          <form className="panel rag-form" onSubmit={startIngestion}>
+            <div className="form-heading">
+              <div><p className="eyebrow">Alimentação governada</p><h2>Indexar repositório na Base RAG</h2></div>
+              <button type="submit" disabled={loading}>{loading ? "Processando…" : "Iniciar ingestão"}</button>
+            </div>
+            <p className="rag-help">O repositório cadastrado é clonado em modo somente leitura, filtrado, sanitizado e removido do servidor após a indexação.</p>
+            <div className="rag-fields">
+              <label>Projeto<input value={projectId} disabled /></label>
+              <label>Repositório<input value={projects.find((item) => item.id === projectId)?.repository || ""} disabled /></label>
+              <label>Branch<input value={ingestionBranch} onChange={(event) => setIngestionBranch(event.target.value)} placeholder={projects.find((item) => item.id === projectId)?.default_branch || "main"} pattern="[A-Za-z0-9][A-Za-z0-9._/-]*" /></label>
+            </div>
+            {ingestion && <div className="ingestion-status">
+              <div><span>Estado</span><strong className={statusClass(ingestion.status)}>{ingestion.status}</strong></div>
+              <div><span>Revisão</span><code>{ingestion.report?.revision || "aguardando"}</code></div>
+              <div><span>Documentos</span><strong>{ingestion.report?.documents ?? "—"}</strong></div>
+              <div><span>Chunks</span><strong>{ingestion.report?.chunks ?? "—"}</strong></div>
+              <div><span>Adicionados</span><strong>{ingestion.report?.sync?.added ?? "—"}</strong></div>
+              <div><span>Removidos</span><strong>{ingestion.report?.sync?.removed ?? "—"}</strong></div>
+              {ingestion.error && <p className="error">{ingestion.error}</p>}
+            </div>}
+            {!!ingestion?.report?.files?.length && <details className="ingestion-files"><summary>Arquivos relevantes ({ingestion.report.files.length} de {ingestion.report.total_files})</summary><div>{ingestion.report.files.map((file) => <p key={file.path}><code>{file.path}</code><span>{file.status}{file.reason ? ` · ${file.reason}` : ""}{file.chunks ? ` · ${file.chunks} chunks` : ""}</span></p>)}</div></details>}
+            {!!ingestion?.report?.file_summary && <div className="rag-summary">{Object.entries(ingestion.report.file_summary).map(([label, count]) => <span key={label}>{label}: <strong>{count}</strong></span>)}</div>}
+          </form>
+          <form className="panel rag-form" onSubmit={searchKnowledge}>
+            <div className="form-heading"><div><p className="eyebrow">Validação da recuperação</p><h2>Consultar conhecimento indexado</h2></div><button type="submit" disabled={loading || knowledgeQuery.trim().length < 2}>Buscar</button></div>
+            <label className="prompt-field">Pergunta<input value={knowledgeQuery} onChange={(event) => setKnowledgeQuery(event.target.value)} placeholder="Ex.: Como a aplicação configura o banco de dados?" /></label>
+            <div className="knowledge-hits">{knowledgeHits.map((hit) => <article key={hit.chunk_id}>
+              <div><strong>{hit.title}</strong><span>score {hit.score.toFixed(4)}</span></div>
+              <small>{hit.source}{hit.start_line ? ` · linhas ${hit.start_line}-${hit.end_line}` : ""}</small>
+              <pre>{hit.content}</pre>
+            </article>)}{!knowledgeHits.length && <Empty text="Faça uma busca para validar os trechos recuperados." />}</div>
+          </form>
         </section>}
 
         {section === "report" && <TechnicalReport
