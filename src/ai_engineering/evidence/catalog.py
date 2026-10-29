@@ -37,6 +37,9 @@ class ProjectCatalog:
                 continue
         return projects
 
+    def get(self, project_id: str) -> ProjectSummary | None:
+        return next((project for project in self.list() if project.id == project_id), None)
+
     def register_public(self, request: PublicProjectCreate) -> ProjectSummary:
         owner, repository = request.repository.split("/", 1)
         metadata = self._fetch_public_metadata(owner, repository)
