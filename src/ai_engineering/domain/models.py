@@ -55,6 +55,17 @@ class LLMUsageRecord(BaseModel):
     estimated_cost_usd: float | None = None
 
 
+class KnowledgeContextRecord(BaseModel):
+    citation: str
+    source: str
+    title: str
+    score: float
+    content: str
+    estimated_tokens: int
+    start_line: int | None = None
+    end_line: int | None = None
+
+
 class ExecutionEvent(BaseModel):
     status: ExecutionStatus
     at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -69,6 +80,8 @@ class Execution(BaseModel):
     plan: list[str] = Field(default_factory=list)
     results: list[AgentResult] = Field(default_factory=list)
     knowledge_sources: list[str] = Field(default_factory=list)
+    knowledge_context: list[KnowledgeContextRecord] = Field(default_factory=list)
+    knowledge_input_tokens: int = 0
     evidence_sources: list[str] = Field(default_factory=list)
     consolidated_result: str | None = None
     llm_usage: LLMUsageRecord | None = None

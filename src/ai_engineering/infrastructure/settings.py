@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     llm_planning_enabled: bool = True
     max_llm_input_tokens: int = 4_000
     max_llm_output_tokens: int = 1_000
+    max_rag_context_tokens: int = Field(default=1_200, ge=0, le=20_000)
     embedding_provider: str = "deterministic"
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = Field(default=16, ge=1, le=3072)
