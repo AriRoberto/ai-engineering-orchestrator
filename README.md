@@ -210,6 +210,7 @@ Endpoints atuais:
 - `POST /v1/projects` (somente quando habilitado no perfil local)
 - `POST /v1/executions`
 - `GET /v1/executions?project_id=...`
+- `GET /v1/executions/summaries?project_id=...` (histórico leve para UI, sem resultados e contexto completos)
 - `GET /v1/executions/{id}?project_id=...`
 - `POST /v1/executions/{id}/cancel?project_id=...`
 - `POST /v1/knowledge/documents`

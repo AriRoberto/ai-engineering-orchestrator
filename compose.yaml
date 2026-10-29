@@ -51,8 +51,8 @@ services:
       AIEO_MAX_RETRIES: ${AIEO_MAX_RETRIES:-1}
       AIEO_GITHUB_EVIDENCE_TIMEOUT_SECONDS: ${AIEO_GITHUB_EVIDENCE_TIMEOUT_SECONDS:-10}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777
@@ -61,6 +61,24 @@ services:
     cap_drop:
       - ALL
     restart: unless-stopped
+
+  migrate:
+    build: .
+    command: ["python", "-m", "ai_engineering.infrastructure.migrations"]
+    environment:
+      AIEO_DATABASE_URL: ${AIEO_DATABASE_URL:-postgresql+psycopg://aieo:aieo@postgres:5432/aieo}
+      AIEO_MIGRATIONS_DIR: /app/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: "no"
 
 volumes:
   postgres-data:

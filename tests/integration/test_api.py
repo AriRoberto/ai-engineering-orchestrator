@@ -27,6 +27,10 @@ def test_runtime_identifies_active_llm_without_exposing_credentials() -> None:
         "llm_model": "deterministic-demo",
         "external_api": False,
         "usage_accounting": "estimated",
+        "embedding_mode": "local",
+        "embedding_provider": "deterministic",
+        "embedding_model": "deterministic-demo",
+        "embedding_external_api": False,
         "project_registration_enabled": False,
     }
     assert "key" not in response.text.casefold()
@@ -97,6 +101,16 @@ def test_demo_execution() -> None:
     assert all(result["simulated"] for result in payload["results"])
     assert payload["consolidated_result"].startswith("[SIMULAÇÃO]")
     assert payload["llm_usage"]["provider"] == "simulated"
+
+    summaries = client.get(
+        "/v1/executions/summaries", params={"project_id": "demo-project"}
+    )
+    assert summaries.status_code == 200
+    summary = next(item for item in summaries.json() if item["id"] == payload["id"])
+    assert summary["prompt"] == "Analise o código e o pipeline"
+    assert summary["status"] == "COMPLETED"
+    assert "results" not in summary
+    assert "context" not in summary
 
 
 def test_knowledge_and_simulated_llm_endpoints() -> None:
