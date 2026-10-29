@@ -164,6 +164,7 @@ orchestrator = AIEngineeringOrchestrator(
     llm=llm_provider if settings.llm_planning_enabled else None,
     max_llm_input_tokens=settings.max_llm_input_tokens,
     max_llm_output_tokens=settings.max_llm_output_tokens,
+    max_rag_context_tokens=settings.max_rag_context_tokens,
 )
 evidence_execution_service = EvidenceExecutionService(
     settings.mcp_project_config_dir,
@@ -226,7 +227,7 @@ def health() -> dict[str, str]:
 
 
 @app.get("/runtime", tags=["system"])
-def runtime() -> dict[str, str | bool]:
+def runtime() -> dict[str, str | bool | int]:
     is_openai = settings.llm_provider == "openai-agents"
     uses_external_embeddings = settings.embedding_provider == "openai"
     return {
@@ -241,6 +242,7 @@ def runtime() -> dict[str, str | bool]:
             settings.embedding_model if uses_external_embeddings else "deterministic-demo"
         ),
         "embedding_external_api": uses_external_embeddings,
+        "max_rag_context_tokens": settings.max_rag_context_tokens,
         "project_registration_enabled": settings.project_registration_enabled,
     }
 
