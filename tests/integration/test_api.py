@@ -131,6 +131,13 @@ def test_knowledge_and_simulated_llm_endpoints() -> None:
     )
     assert searched.status_code == 200
     assert searched.json()[0]["source"] == "demo://runbook"
+    knowledge_status = client.get(
+        "/v1/knowledge/status", params={"project_id": "demo-project"}
+    )
+    assert knowledge_status.status_code == 200
+    assert knowledge_status.json()["ready"] is True
+    assert knowledge_status.json()["documents"] >= 1
+    assert knowledge_status.json()["chunks"] >= 1
     llm = client.post("/v1/llm/generate", json={"prompt": "Explique o diagnóstico"})
     assert llm.status_code == 200
     assert llm.json()["simulated"] is True
@@ -158,6 +165,48 @@ def test_repository_ingestion_job_is_project_scoped(monkeypatch) -> None:
         params={"project_id": "demo-project"},
     )
     assert denied.status_code == 404
+
+
+def test_rag_evaluation_and_feedback_endpoints() -> None:
+    project_id = "rag-evaluation-api"
+    ingested = client.post(
+        "/v1/knowledge/documents",
+        json={
+            "project_id": project_id,
+            "title": "Runbook de backup",
+            "content": "Backup PostgreSQL e teste de restauração do banco.",
+            "source": "repo://rag-evaluation-api/repository/docs/backup.md",
+        },
+    )
+    assert ingested.status_code == 201
+    evaluated = client.post(
+        "/v1/knowledge/evaluations",
+        json={
+            "project_id": project_id,
+            "query": "Como testar o backup PostgreSQL?",
+            "expected_sources": ["docs/backup.md"],
+            "specialty": "database",
+        },
+    )
+    assert evaluated.status_code == 201
+    result = evaluated.json()
+    assert result["hit_at_1"] is True
+    feedback = client.post(
+        "/v1/knowledge/evaluations/feedback",
+        json={
+            "project_id": project_id,
+            "evaluation_id": result["id"],
+            "chunk_id": result["hits"][0]["chunk_id"],
+            "relevance": "relevant",
+        },
+    )
+    assert feedback.status_code == 201
+    metrics = client.get(
+        "/v1/knowledge/evaluations/metrics", params={"project_id": project_id}
+    )
+    assert metrics.status_code == 200
+    assert metrics.json()["mean_reciprocal_rank"] == 1.0
+    assert metrics.json()["feedback"] == {"relevant": 1}
 
 
 def test_repository_ingestion_rejects_private_catalog_project() -> None:

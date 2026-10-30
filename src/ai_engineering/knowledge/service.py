@@ -14,9 +14,16 @@ from ai_engineering.knowledge.embeddings import (
 from ai_engineering.knowledge.models import (
     FeedbackCreate,
     KnowledgeChunk,
+    KnowledgeCollectionStatus,
     KnowledgeDocument,
     KnowledgeDocumentCreate,
     KnowledgeScope,
+    KnowledgeStatus,
+    RAGEvaluationRequest,
+    RAGEvaluationResult,
+    RAGFeedback,
+    RAGFeedbackCreate,
+    RAGMetrics,
     SearchHit,
 )
 from ai_engineering.security.content import KnowledgeContentGuard
@@ -45,6 +52,14 @@ class KnowledgeRepository(Protocol):
         self, project_id: str, include_shared: bool
     ) -> list[tuple[KnowledgeDocument, KnowledgeChunk]]: ...
     def add_feedback(self, feedback: FeedbackCreate) -> None: ...
+    def status(self, project_id: str) -> KnowledgeStatus: ...
+    def save_evaluation(self, result: RAGEvaluationResult) -> None: ...
+    def get_evaluation(
+        self, evaluation_id: UUID, project_id: str
+    ) -> RAGEvaluationResult | None: ...
+    def list_evaluations(self, project_id: str) -> list[RAGEvaluationResult]: ...
+    def save_retrieval_feedback(self, feedback: RAGFeedback) -> None: ...
+    def list_retrieval_feedback(self, project_id: str) -> list[RAGFeedback]: ...
     def search(
         self,
         project_id: str,
@@ -68,6 +83,8 @@ class InMemoryKnowledgeRepository:
         self.documents: dict[UUID, KnowledgeDocument] = {}
         self.chunks: dict[UUID, list[KnowledgeChunk]] = {}
         self.feedback: list[FeedbackCreate] = []
+        self.evaluations: dict[UUID, RAGEvaluationResult] = {}
+        self.retrieval_feedback: dict[tuple[UUID, UUID], RAGFeedback] = {}
 
     def add(self, document: KnowledgeDocument, chunks: list[KnowledgeChunk]) -> None:
         self.documents[document.id] = document.model_copy(deep=True)
@@ -101,6 +118,48 @@ class InMemoryKnowledgeRepository:
 
     def add_feedback(self, feedback: FeedbackCreate) -> None:
         self.feedback.append(feedback.model_copy(deep=True))
+
+    def status(self, project_id: str) -> KnowledgeStatus:
+        return build_knowledge_status(
+            project_id,
+            [
+                document
+                for document in self.documents.values()
+                if document.project_id == project_id
+            ],
+        )
+
+    def save_evaluation(self, result: RAGEvaluationResult) -> None:
+        self.evaluations[result.id] = result.model_copy(deep=True)
+
+    def get_evaluation(self, evaluation_id: UUID, project_id: str):
+        result = self.evaluations.get(evaluation_id)
+        if not result or result.project_id != project_id:
+            return None
+        return result.model_copy(deep=True)
+
+    def list_evaluations(self, project_id: str):
+        return sorted(
+            (
+                result.model_copy(deep=True)
+                for result in self.evaluations.values()
+                if result.project_id == project_id
+            ),
+            key=lambda result: result.created_at,
+            reverse=True,
+        )
+
+    def save_retrieval_feedback(self, feedback: RAGFeedback) -> None:
+        self.retrieval_feedback[(feedback.evaluation_id, feedback.chunk_id)] = (
+            feedback.model_copy(deep=True)
+        )
+
+    def list_retrieval_feedback(self, project_id: str):
+        return [
+            item.model_copy(deep=True)
+            for item in self.retrieval_feedback.values()
+            if item.project_id == project_id
+        ]
 
     def sync_collection(
         self,
@@ -213,6 +272,37 @@ def collection_counts(existing, incoming):
     }
 
 
+def build_knowledge_status(
+    project_id: str, documents: list[KnowledgeDocument]
+) -> KnowledgeStatus:
+    grouped: dict[tuple[str, str], list[KnowledgeDocument]] = {}
+    for document in documents:
+        key = (document.collection or "manual", document.embedding_key)
+        grouped.setdefault(key, []).append(document)
+    collections = []
+    for (collection, embedding_key), items in sorted(grouped.items()):
+        revisions = {
+            item.provenance.revision for item in items if item.provenance is not None
+        }
+        collections.append(
+            KnowledgeCollectionStatus(
+                collection=collection,
+                documents=len(items),
+                chunks=sum(item.chunks for item in items),
+                embedding_key=embedding_key,
+                revision=next(iter(revisions)) if len(revisions) == 1 else None,
+                updated_at=max(item.created_at for item in items),
+            )
+        )
+    return KnowledgeStatus(
+        project_id=project_id,
+        ready=bool(documents),
+        documents=len(documents),
+        chunks=sum(document.chunks for document in documents),
+        collections=collections,
+    )
+
+
 class KnowledgeService:
     def __init__(
         self,
@@ -227,6 +317,84 @@ class KnowledgeService:
         self.guard = guard
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+
+    def status(self, project_id: str) -> KnowledgeStatus:
+        return self.repository.status(project_id)
+
+    def evaluate(self, request: RAGEvaluationRequest) -> RAGEvaluationResult:
+        hits = self.search(request.project_id, request.query, request.limit, False)
+        expected = [source.strip() for source in request.expected_sources if source.strip()]
+        if not expected:
+            raise ValueError("A avaliação exige ao menos uma fonte esperada")
+
+        def matches(source: str, target: str) -> bool:
+            return source == target or source.endswith("/" + target.lstrip("/"))
+
+        relevant_ranks = [
+            rank
+            for rank, hit in enumerate(hits, 1)
+            if any(matches(hit.source, target) for target in expected)
+        ]
+        first_rank = min(relevant_ranks) if relevant_ranks else None
+        matched = list(
+            dict.fromkeys(
+                hit.source
+                for hit in hits
+                if any(matches(hit.source, target) for target in expected)
+            )
+        )
+        revisions = {
+            hit.provenance.revision for hit in hits if hit.provenance is not None
+        }
+        result = RAGEvaluationResult(
+            project_id=request.project_id,
+            query=request.query,
+            specialty=request.specialty,
+            expected_sources=expected,
+            matched_sources=matched,
+            hits=hits,
+            first_relevant_rank=first_rank,
+            hit_at_1=first_rank == 1,
+            hit_at_3=first_rank is not None and first_rank <= 3,
+            hit_at_5=first_rank is not None and first_rank <= 5,
+            reciprocal_rank=1 / first_rank if first_rank else 0.0,
+            embedding_key=self.embeddings.key,
+            revision=next(iter(revisions)) if len(revisions) == 1 else None,
+        )
+        self.repository.save_evaluation(result)
+        return result
+
+    def add_retrieval_feedback(self, request: RAGFeedbackCreate) -> RAGFeedback:
+        evaluation = self.repository.get_evaluation(
+            request.evaluation_id, request.project_id
+        )
+        if not evaluation or request.chunk_id not in {hit.chunk_id for hit in evaluation.hits}:
+            raise ValueError("Avaliação ou chunk não pertence ao projeto")
+        feedback = RAGFeedback(**request.model_dump())
+        self.repository.save_retrieval_feedback(feedback)
+        return feedback
+
+    def evaluation_metrics(self, project_id: str) -> RAGMetrics:
+        results = self.repository.list_evaluations(project_id)
+        feedback = Counter(
+            item.relevance.value
+            for item in self.repository.list_retrieval_feedback(project_id)
+        )
+        count = len(results)
+        ratio = lambda name: (  # noqa: E731 -- local metric projection.
+            sum(bool(getattr(item, name)) for item in results) / count if count else 0.0
+        )
+        return RAGMetrics(
+            project_id=project_id,
+            evaluations=count,
+            hit_at_1=ratio("hit_at_1"),
+            hit_at_3=ratio("hit_at_3"),
+            hit_at_5=ratio("hit_at_5"),
+            mean_reciprocal_rank=(
+                sum(item.reciprocal_rank for item in results) / count if count else 0.0
+            ),
+            feedback=dict(feedback),
+        )
 
     def ingest(self, request: KnowledgeDocumentCreate) -> KnowledgeDocument:
         if request.scope == KnowledgeScope.SHARED and not request.sharing_authorized:

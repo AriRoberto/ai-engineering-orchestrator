@@ -217,6 +217,10 @@ Endpoints atuais:
 - `POST /v1/knowledge/repositories/ingestions` (job de ingestão Git governada)
 - `GET /v1/knowledge/repositories/ingestions?project_id=...`
 - `GET /v1/knowledge/repositories/ingestions/{id}?project_id=...`
+- `GET /v1/knowledge/status?project_id=...`
+- `POST /v1/knowledge/evaluations`
+- `GET /v1/knowledge/evaluations/metrics?project_id=...`
+- `POST /v1/knowledge/evaluations/feedback`
 - `POST /v1/knowledge/search`
 - `DELETE /v1/knowledge/documents/{id}`
 - `POST /v1/feedback`
