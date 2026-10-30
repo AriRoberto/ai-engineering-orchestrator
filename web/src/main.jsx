@@ -68,6 +68,12 @@ function App() {
   const [ingestionBranch, setIngestionBranch] = useState("");
   const [knowledgeQuery, setKnowledgeQuery] = useState("");
   const [knowledgeHits, setKnowledgeHits] = useState([]);
+  const [knowledgeStatus, setKnowledgeStatus] = useState(null);
+  const [ragMetrics, setRagMetrics] = useState(null);
+  const [evaluationQuery, setEvaluationQuery] = useState("");
+  const [expectedSources, setExpectedSources] = useState("");
+  const [evaluationSpecialty, setEvaluationSpecialty] = useState("general");
+  const [evaluationResult, setEvaluationResult] = useState(null);
 
   async function request(path, options = {}) {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -88,6 +94,9 @@ function App() {
     setReportAction("");
     setIngestion(null);
     setKnowledgeHits([]);
+    setKnowledgeStatus(null);
+    setRagMetrics(null);
+    setEvaluationResult(null);
     setError("");
     if (clearPrompt) setPrompt("");
   }
@@ -98,14 +107,18 @@ function App() {
     setError("");
     try {
       const query = encodeURIComponent(targetProjectId);
-      const [executionData, invocationData, auditData] = await Promise.all([
+      const [executionData, invocationData, auditData, knowledgeData, metricsData] = await Promise.all([
         request(`/v1/executions/summaries?project_id=${query}`),
         request(`/v1/mcp/invocations?project_id=${query}`),
         request(`/v1/evidence/audits?project_id=${query}`),
+        request(`/v1/knowledge/status?project_id=${query}`),
+        request(`/v1/knowledge/evaluations/metrics?project_id=${query}`),
       ]);
       setExecutions(executionData);
       setInvocations(invocationData);
       setAudits(auditData);
+      setKnowledgeStatus(knowledgeData);
+      setRagMetrics(metricsData);
       const firstExecution = executionData[0];
       setSelected(firstExecution
         ? await request(`/v1/executions/${firstExecution.id}?project_id=${query}`)
@@ -206,7 +219,10 @@ function App() {
         }),
       });
       setIngestion(job);
-      await pollIngestion(job.id, projectId);
+      const completed = await pollIngestion(job.id, projectId);
+      if (completed.status === "COMPLETED") {
+        setKnowledgeStatus(await request(`/v1/knowledge/status?project_id=${encodeURIComponent(projectId)}`));
+      }
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -233,6 +249,38 @@ function App() {
       setError(reason.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function evaluateRag(event) {
+    event.preventDefault();
+    const expected = expectedSources.split("\n").map((item) => item.trim()).filter(Boolean);
+    if (evaluationQuery.trim().length < 2 || !expected.length) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await request("/v1/knowledge/evaluations", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId, query: evaluationQuery.trim(), expected_sources: expected, specialty: evaluationSpecialty, limit: 5 }),
+      });
+      setEvaluationResult(result);
+      setRagMetrics(await request(`/v1/knowledge/evaluations/metrics?project_id=${encodeURIComponent(projectId)}`));
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function rateRagHit(hit, relevance) {
+    try {
+      await request("/v1/knowledge/evaluations/feedback", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId, evaluation_id: evaluationResult.id, chunk_id: hit.chunk_id, relevance, comment: "" }),
+      });
+      setRagMetrics(await request(`/v1/knowledge/evaluations/metrics?project_id=${encodeURIComponent(projectId)}`));
+    } catch (reason) {
+      setError(reason.message);
     }
   }
 
@@ -398,6 +446,9 @@ function App() {
             </label>)}</div>
           </fieldset>
           <label className="content-option"><input type="checkbox" checked={includeContent} onChange={(event) => setIncludeContent(event.target.checked)} /> Incluir conteúdo permitido dos arquivos</label>
+          {knowledgeStatus && <p className={knowledgeStatus.ready ? "rag-ready" : "rag-warning"}>{knowledgeStatus.ready
+            ? `Base RAG pronta: ${knowledgeStatus.documents} documentos e ${knowledgeStatus.chunks} chunks serão consultados dentro do limite configurado.`
+            : "Base RAG vazia para este projeto. A análise continuará somente com evidências do repositório; alimente a base na seção Base RAG."}</p>}
         </form>}
 
         {section === "executions" && <section className="grid">
@@ -422,6 +473,11 @@ function App() {
         </section>}
 
         {section === "knowledge" && <section className="rag-workspace">
+          <section className="panel rag-inventory">
+            <div className="form-heading"><div><p className="eyebrow">Inventário persistente</p><h2>Estado da Base RAG</h2></div><strong className={statusClass(knowledgeStatus?.ready ? "COMPLETED" : "FAILED")}>{knowledgeStatus?.ready ? "PRONTA" : "VAZIA"}</strong></div>
+            <div className="ingestion-status"><div><span>Documentos</span><strong>{knowledgeStatus?.documents ?? 0}</strong></div><div><span>Chunks</span><strong>{knowledgeStatus?.chunks ?? 0}</strong></div><div><span>Coleções</span><strong>{knowledgeStatus?.collections?.length ?? 0}</strong></div></div>
+            <div className="rag-collections">{(knowledgeStatus?.collections || []).map((item) => <article key={`${item.collection}-${item.embedding_key}`}><div><strong>{item.collection}</strong><span>{item.documents} documentos · {item.chunks} chunks</span></div><code>{item.revision || "sem revisão única"}</code><small>{item.embedding_key}</small></article>)}{!knowledgeStatus?.collections?.length && <Empty text="Nenhuma coleção persistida para este projeto." />}</div>
+          </section>
           <form className="panel rag-form" onSubmit={startIngestion}>
             <div className="form-heading">
               <div><p className="eyebrow">Alimentação governada</p><h2>Indexar repositório na Base RAG</h2></div>
@@ -453,6 +509,13 @@ function App() {
               <small>{hit.source}{hit.start_line ? ` · linhas ${hit.start_line}-${hit.end_line}` : ""}</small>
               <pre>{hit.content}</pre>
             </article>)}{!knowledgeHits.length && <Empty text="Faça uma busca para validar os trechos recuperados." />}</div>
+          </form>
+          <form className="panel rag-form" onSubmit={evaluateRag}>
+            <div className="form-heading"><div><p className="eyebrow">Ciclo de aprendizado</p><h2>Avaliação RAG com resposta esperada</h2></div><button type="submit" disabled={loading || evaluationQuery.trim().length < 2 || !expectedSources.trim()}>Avaliar recuperação</button></div>
+            <p className="rag-help">Defina uma pergunta e os caminhos ou fontes que deveriam aparecer. As métricas ficam persistidas por projeto e revisão.</p>
+            <div className="rag-eval-fields"><label>Especialidade<select value={evaluationSpecialty} onChange={(event) => setEvaluationSpecialty(event.target.value)}><option value="general">Geral</option><option value="software-engineer">Arquitetura</option><option value="database">Banco de dados</option><option value="qa">QA</option><option value="security">Segurança</option><option value="documentation">Documentação</option><option value="devops">Operação/DevOps</option></select></label><label>Pergunta<input value={evaluationQuery} onChange={(event) => setEvaluationQuery(event.target.value)} placeholder="Como o banco é inicializado?" /></label><label>Fontes esperadas, uma por linha<textarea value={expectedSources} onChange={(event) => setExpectedSources(event.target.value)} placeholder="backend/migrations/001_members_and_transactions.sql" /></label></div>
+            <div className="rag-metrics"><div><span>Casos</span><strong>{ragMetrics?.evaluations ?? 0}</strong></div><div><span>Hit@1</span><strong>{Math.round((ragMetrics?.hit_at_1 || 0) * 100)}%</strong></div><div><span>Hit@3</span><strong>{Math.round((ragMetrics?.hit_at_3 || 0) * 100)}%</strong></div><div><span>Hit@5</span><strong>{Math.round((ragMetrics?.hit_at_5 || 0) * 100)}%</strong></div><div><span>MRR</span><strong>{(ragMetrics?.mean_reciprocal_rank || 0).toFixed(3)}</strong></div></div>
+            {evaluationResult && <div className="knowledge-hits"><p className={evaluationResult.hit_at_5 ? "rag-ready" : "rag-warning"}>Primeiro resultado relevante: {evaluationResult.first_relevant_rank ? `posição ${evaluationResult.first_relevant_rank}` : "não encontrado no top 5"} · revisão {evaluationResult.revision || "não identificada"}</p>{evaluationResult.hits.map((hit, index) => <article key={hit.chunk_id}><div><strong>#{index + 1} · {hit.title}</strong><span>score {hit.score.toFixed(4)}</span></div><small>{hit.source}</small><pre>{hit.content}</pre><div className="feedback-actions"><span>Este trecho é:</span><button type="button" onClick={() => rateRagHit(hit, "relevant")}>Relevante</button><button type="button" onClick={() => rateRagHit(hit, "partial")}>Parcial</button><button type="button" onClick={() => rateRagHit(hit, "irrelevant")}>Irrelevante</button></div></article>)}</div>}
           </form>
         </section>}
 

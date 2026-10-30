@@ -55,6 +55,12 @@ from ai_engineering.knowledge.models import (
     KnowledgeDocument,
     KnowledgeDocumentCreate,
     KnowledgeSearchRequest,
+    KnowledgeStatus,
+    RAGEvaluationRequest,
+    RAGEvaluationResult,
+    RAGFeedback,
+    RAGFeedbackCreate,
+    RAGMetrics,
     RepositoryIngestionJob,
     RepositoryIngestionRequest,
     SearchHit,
@@ -376,6 +382,46 @@ def search_knowledge(request: KnowledgeSearchRequest) -> list[SearchHit]:
     return knowledge_service.search(
         request.project_id, request.query, request.limit, request.include_shared
     )
+
+
+@app.get("/v1/knowledge/status", response_model=KnowledgeStatus, tags=["knowledge"])
+def get_knowledge_status(project_id: str) -> KnowledgeStatus:
+    authorize_project(project_id)
+    return knowledge_service.status(project_id)
+
+
+@app.post(
+    "/v1/knowledge/evaluations",
+    response_model=RAGEvaluationResult,
+    status_code=status.HTTP_201_CREATED,
+    tags=["knowledge"],
+)
+def evaluate_rag(request: RAGEvaluationRequest) -> RAGEvaluationResult:
+    authorize_project(request.project_id)
+    try:
+        return knowledge_service.evaluate(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/v1/knowledge/evaluations/metrics", response_model=RAGMetrics, tags=["knowledge"])
+def get_rag_evaluation_metrics(project_id: str) -> RAGMetrics:
+    authorize_project(project_id)
+    return knowledge_service.evaluation_metrics(project_id)
+
+
+@app.post(
+    "/v1/knowledge/evaluations/feedback",
+    response_model=RAGFeedback,
+    status_code=status.HTTP_201_CREATED,
+    tags=["knowledge"],
+)
+def create_rag_feedback(request: RAGFeedbackCreate) -> RAGFeedback:
+    authorize_project(request.project_id)
+    try:
+        return knowledge_service.add_retrieval_feedback(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post(

@@ -13,6 +13,7 @@ services:
       - ./migrations/004_phase4_evidence_audit.sql:/docker-entrypoint-initdb.d/004_phase4_evidence_audit.sql:ro
       - ./migrations/005_repository_knowledge.sql:/docker-entrypoint-initdb.d/005_repository_knowledge.sql:ro
       - ./migrations/006_semantic_knowledge.sql:/docker-entrypoint-initdb.d/006_semantic_knowledge.sql:ro
+      - ./migrations/007_rag_evaluation.sql:/docker-entrypoint-initdb.d/007_rag_evaluation.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aieo -d aieo"]
       interval: 5s
