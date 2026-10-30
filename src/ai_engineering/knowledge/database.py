@@ -26,9 +26,17 @@ from ai_engineering.knowledge.models import (
     KnowledgeDocument,
     KnowledgeProvenance,
     KnowledgeScope,
+    KnowledgeStatus,
+    RAGEvaluationResult,
+    RAGFeedback,
+    RAGRelevance,
     SearchHit,
 )
-from ai_engineering.knowledge.service import collection_counts, validate_collection
+from ai_engineering.knowledge.service import (
+    build_knowledge_status,
+    collection_counts,
+    validate_collection,
+)
 
 
 class Base(DeclarativeBase):
@@ -78,6 +86,27 @@ class FeedbackRow(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
+
+
+class RAGEvaluationRow(Base):
+    __tablename__ = "rag_evaluation_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(63), index=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class RAGFeedbackRow(Base):
+    __tablename__ = "rag_retrieval_feedback"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(63), index=True)
+    evaluation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("rag_evaluation_runs.id", ondelete="CASCADE"), index=True
+    )
+    chunk_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True))
+    relevance: Mapped[str] = mapped_column(String(20))
+    comment: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class PostgresKnowledgeRepository:
@@ -194,6 +223,83 @@ class PostgresKnowledgeRepository:
     def add_feedback(self, feedback: FeedbackCreate) -> None:
         with Session(self.engine) as session, session.begin():
             session.add(FeedbackRow(**feedback.model_dump()))
+
+    def status(self, project_id: str) -> KnowledgeStatus:
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(DocumentRow).where(DocumentRow.project_id == project_id)
+            ).all()
+        return build_knowledge_status(
+            project_id, [self._document(row) for row in rows]
+        )
+
+    def save_evaluation(self, result: RAGEvaluationResult) -> None:
+        with Session(self.engine) as session, session.begin():
+            session.add(
+                RAGEvaluationRow(
+                    id=result.id,
+                    project_id=result.project_id,
+                    payload=result.model_dump(mode="json"),
+                    created_at=result.created_at,
+                )
+            )
+
+    def get_evaluation(self, evaluation_id: UUID, project_id: str):
+        with Session(self.engine) as session:
+            row = session.scalar(
+                select(RAGEvaluationRow).where(
+                    RAGEvaluationRow.id == evaluation_id,
+                    RAGEvaluationRow.project_id == project_id,
+                )
+            )
+        return RAGEvaluationResult.model_validate(row.payload) if row else None
+
+    def list_evaluations(self, project_id: str):
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(RAGEvaluationRow)
+                .where(RAGEvaluationRow.project_id == project_id)
+                .order_by(RAGEvaluationRow.created_at.desc())
+            ).all()
+        return [RAGEvaluationResult.model_validate(row.payload) for row in rows]
+
+    def save_retrieval_feedback(self, feedback: RAGFeedback) -> None:
+        with Session(self.engine) as session, session.begin():
+            session.execute(
+                delete(RAGFeedbackRow).where(
+                    RAGFeedbackRow.evaluation_id == feedback.evaluation_id,
+                    RAGFeedbackRow.chunk_id == feedback.chunk_id,
+                )
+            )
+            session.add(
+                RAGFeedbackRow(
+                    id=feedback.id,
+                    project_id=feedback.project_id,
+                    evaluation_id=feedback.evaluation_id,
+                    chunk_id=feedback.chunk_id,
+                    relevance=feedback.relevance.value,
+                    comment=feedback.comment,
+                    created_at=feedback.created_at,
+                )
+            )
+
+    def list_retrieval_feedback(self, project_id: str):
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(RAGFeedbackRow).where(RAGFeedbackRow.project_id == project_id)
+            ).all()
+        return [
+            RAGFeedback(
+                id=row.id,
+                project_id=row.project_id,
+                evaluation_id=row.evaluation_id,
+                chunk_id=row.chunk_id,
+                relevance=RAGRelevance(row.relevance),
+                comment=row.comment,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
 
     def search(self, project_id, query, embedding, embedding_key, limit, include_shared):
         statement = text("""
