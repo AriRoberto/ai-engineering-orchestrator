@@ -73,11 +73,88 @@ class SearchHit(BaseModel):
     end_line: int | None = None
 
 
+class KnowledgeCollectionStatus(BaseModel):
+    collection: str
+    documents: int
+    chunks: int
+    embedding_key: str
+    revision: str | None = None
+    updated_at: datetime | None = None
+
+
+class KnowledgeStatus(BaseModel):
+    project_id: str
+    ready: bool
+    documents: int
+    chunks: int
+    collections: list[KnowledgeCollectionStatus] = Field(default_factory=list)
+
+
 class KnowledgeSearchRequest(BaseModel):
     project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
     query: str = Field(min_length=2, max_length=2_000)
     limit: int = Field(default=5, ge=1, le=20)
     include_shared: bool = False
+
+
+class RAGEvaluationRequest(BaseModel):
+    project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    query: str = Field(min_length=2, max_length=2_000)
+    expected_sources: list[str] = Field(min_length=1, max_length=20)
+    specialty: str = Field(default="general", min_length=2, max_length=63)
+    limit: int = Field(default=5, ge=1, le=20)
+
+
+class RAGEvaluationResult(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    project_id: str
+    query: str
+    specialty: str
+    expected_sources: list[str]
+    matched_sources: list[str]
+    hits: list[SearchHit]
+    first_relevant_rank: int | None = None
+    hit_at_1: bool
+    hit_at_3: bool
+    hit_at_5: bool
+    reciprocal_rank: float
+    embedding_key: str
+    revision: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class RAGRelevance(StrEnum):
+    RELEVANT = "relevant"
+    PARTIAL = "partial"
+    IRRELEVANT = "irrelevant"
+
+
+class RAGFeedbackCreate(BaseModel):
+    project_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    evaluation_id: UUID
+    chunk_id: UUID
+    relevance: RAGRelevance
+    comment: str = Field(default="", max_length=2_000)
+
+
+class RAGFeedback(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    project_id: str
+    evaluation_id: UUID
+    chunk_id: UUID
+    relevance: RAGRelevance
+    comment: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class RAGMetrics(BaseModel):
+    project_id: str
+    evaluations: int
+    hit_at_1: float
+    hit_at_3: float
+    hit_at_5: float
+    mean_reciprocal_rank: float
+    feedback: dict[str, int]
 
 
 class RepositoryIngestionRequest(BaseModel):
